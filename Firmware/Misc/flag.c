@@ -30,7 +30,7 @@ static Flag_Private_t flag;
 /* Functions -----------------------------------------------------------------*/
 
 /* Need handle flags storage initialization */
-Status_t Flag_Init(void)
+Status_t flag_init(void)
 {
     Status_t ret = STATUS_OK;
     flag.handle = 0;
@@ -39,7 +39,7 @@ Status_t Flag_Init(void)
 
 
 /* Set need handle flag */
-void Flag_SetNeedHandle(uint32_t flags)
+void flag_set_need_handle(uint32_t flags)
 {
     assert_param(IS_FLAG(flags));
     critical_enter();
@@ -49,14 +49,14 @@ void Flag_SetNeedHandle(uint32_t flags)
 
 
 /* Get need handle flag */
-bool Flag_GetNeedHandle(uint32_t flags)
+bool flag_get_need_handle(uint32_t flags)
 {
     return (flags & flag.handle);
 }
 
 
 /* Clear need handle flag */
-void Flag_ClearNeedHandle(uint32_t flags)
+void flag_clear_need_handle(uint32_t flags)
 {
     assert_param(IS_FLAG(flags));
     critical_enter();

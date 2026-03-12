@@ -15,6 +15,7 @@
 
 #include <common.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /* Definitions----------------------------------------------------------------*/
 
@@ -43,26 +44,26 @@
  * @brief Need handle flags storage initialization
  * @return STATUS_OK
  */
-Status_t Flag_Init(void);
+Status_t flag_init(void);
 
 /**
  * @brief Set need handle flag
  * @param flags Bit-wise sum of flags to be set
  */
-void Flag_SetNeedHandle(uint32_t flags);
+void flag_set_need_handle(uint32_t flags);
 
 /**
  * @brief Get need handle flag
  * @param flags Bit-wise sum of flags to get
  * @return Value of flags in question
  */
-bool Flag_GetNeedHandle(uint32_t flags);
+bool flag_get_need_handle(uint32_t flags);
 
 /**
  * @brief Clear need handle flag
  * @param flags Bit-wise sum of flags to be cleared
  */
-void Flag_ClearNeedHandle(uint32_t flags);
+void flag_clear_need_handle(uint32_t flags);
 
 /* ---------------------------------------------------------------------------*/
 
