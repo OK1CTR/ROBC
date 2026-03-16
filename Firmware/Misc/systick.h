@@ -14,6 +14,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Defines -------------------------------------------------------------------*/
 
@@ -34,12 +35,6 @@
 //! Return number of ticks corresponding to hours
 #define tick_hour(a)                ((TICK_FREQUENCY) * 3600 * (a))
 
-//! Set 64bit unsigned tick timer to given number of ticks
-#define tick_timer_set(tks)         (ticks_now() + tks)
-
-//! Check 64bit unsigned tick timer to expire
-#define tick_timer_expired(tmr)     (ticks_now() - (tmr) < 0x7FFFFFFFFFFFFFFF)
-
 /* Typedefs ------------------------------------------------------------------*/
 
 /* 64bit integer to maintain time as a number of clock ticks */
@@ -50,12 +45,26 @@ typedef uint64_t ticks_t;
 /**
  * @brief SysTick initialization
  */
-void tick_init();
+extern void tick_init();
 
 /**
  * @brief Return actual state of the SysTick tick counter
  */
-ticks_t ticks_now();
+extern ticks_t ticks_now();
+
+/**
+ * @brief Set 64bit unsigned tick timer to given number of ticks
+ * @param tmr Pointer to systick software timer
+ * @param ticks Number of ticks to timer expire
+ */
+extern void tick_timer_set(ticks_t *tmr, ticks_t ticks);
+
+/**
+ * @brief Check 64bit unsigned tick timer to expire
+ * @param tmr Pointer to systick software timer
+ * @return True if timer expired
+ */
+extern bool tick_timer_expired(ticks_t *tmr);
 
 /* ---------------------------------------------------------------------------*/
 

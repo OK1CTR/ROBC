@@ -10,9 +10,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+#include <serial.h>
 #include <critical.h>
 #include <main.h>
-#include <serial.h>
 
 /* Exported C functions ------------------------------------------------------*/
 

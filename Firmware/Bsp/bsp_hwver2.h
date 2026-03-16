@@ -115,10 +115,20 @@
 #define MMOSI_GPIO_Port GPIOB
 
 /* I2C */
-#define SCL_Pin LL_GPIO_PIN_6
-#define SCL_GPIO_Port GPIOB
-#define SDA_Pin LL_GPIO_PIN_7
-#define SDA_GPIO_Port GPIOB
+#define SCL_Pin                      LL_GPIO_PIN_6
+#define SCL_GPIO_Port                GPIOB
+#define SDA_Pin                      LL_GPIO_PIN_7
+#define SDA_GPIO_Port                GPIOB
+
+#define I2C1_I2C                     I2C1
+#define I2C1_CLOCK_EN()              LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1)
+#define I2C1_CLOCK_SPEED             100000
+#define I2C1_IRQ_N                   I2C1_EV_IRQn
+#define I2C1_IRQ_HANDLER             I2C1_EV_IRQHandler
+#define I2C1_ERROR_IRQ_N             I2C1_ER_IRQn
+#define I2C1_ERROR_IRQ_HANDLER       I2C1_ER_IRQHandler
+
+#define I2C_LED_BAR                  0x20
 
 
 #ifndef NVIC_PRIORITYGROUP_0

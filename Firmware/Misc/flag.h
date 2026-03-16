@@ -44,26 +44,26 @@
  * @brief Need handle flags storage initialization
  * @return STATUS_OK
  */
-Status_t flag_init(void);
+extern Status_t flag_init(void);
 
 /**
  * @brief Set need handle flag
  * @param flags Bit-wise sum of flags to be set
  */
-void flag_set_need_handle(uint32_t flags);
+extern void flag_set_need_handle(uint32_t flags);
 
 /**
  * @brief Get need handle flag
  * @param flags Bit-wise sum of flags to get
  * @return Value of flags in question
  */
-bool flag_get_need_handle(uint32_t flags);
+extern bool flag_get_need_handle(uint32_t flags);
 
 /**
  * @brief Clear need handle flag
  * @param flags Bit-wise sum of flags to be cleared
  */
-void flag_clear_need_handle(uint32_t flags);
+extern void flag_clear_need_handle(uint32_t flags);
 
 /* ---------------------------------------------------------------------------*/
 
