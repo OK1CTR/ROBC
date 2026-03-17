@@ -1,5 +1,5 @@
 /**
- * @file       stm32f1xx_irq.c
+ * @file       stm32f100_irq.c
  * @author     OK1CTR
  * @date       Mar 2026
  * @brief      General purpose interrupt handler module
@@ -10,8 +10,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-#include <stm32f1xx_irq.h>
-#include "main.h"
+#include <stm32f100_irq.h>
+#include <main.h>
 
 /* Functions -----------------------------------------------------------------*/
 

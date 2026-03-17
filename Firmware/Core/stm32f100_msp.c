@@ -1,8 +1,8 @@
 /**
- * @file       stm32f1xx_msp.c
+ * @file       stm32f100_msp.c
  * @author     OK1CTR
  * @date       Mar 2026
- * @brief      MCU specific module
+ * @brief      MCU specific module for STM32F100
  *
  * @addtogroup grMsp
  * @{
@@ -11,7 +11,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <main.h>
-#include <stm32f1xx_msp.h>
+#include <stm32f100_msp.h>
 
 /* Private function prototypes -----------------------------------------------*/
 
@@ -31,10 +31,10 @@ void msp_init()
     LL_GPIO_AF_Remap_SWJ_NOJTAG();
     system_clock_config();
 
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOC);
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOD);
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOA);
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOB);
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOC);
+    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOD);
 }
 
 /* Private functions ---------------------------------------------------------*/

@@ -11,8 +11,8 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <flag.h>
-#include <stm32_assert.h>
 #include <critical.h>
+#include <stm32_assert.h>
 
 /* Private typedefs ----------------------------------------------------------*/
 

@@ -144,6 +144,13 @@
                                                                  0 bit  for subpriority */
 #endif
 
+/* Functions -----------------------------------------------------------------*/
+
+/**
+ * @brief Generic GPIO initialization
+ */
+extern void gpio_init();
+
 /* ---------------------------------------------------------------------------*/
 
 #endif  /* _BSP_HWVER2_H_ */

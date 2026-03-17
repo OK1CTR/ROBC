@@ -13,9 +13,9 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-#include <common.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <common.h>
 
 /* Definitions----------------------------------------------------------------*/
 
@@ -31,7 +31,6 @@
 #define FLAG_ALARM_2            (1 << 3)    ///< Global timing - alarm clock 2
 
 /** @} */
-
 
 //! Mask of all flags. This is used to verify flag parameters
 #define FLAG_ALL (FLAG_SECOND | FLAG_MINUTE)

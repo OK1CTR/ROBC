@@ -25,13 +25,6 @@
 #include "stm32_assert.h"
 #endif  /* USE_FULL_ASSERT */
 
-/* Exported functions prototypes ---------------------------------------------*/
-
-/**
- * @brief  This function is executed in case of error occurrence
- */
-extern void Error_Handler(void);
-
 /* ---------------------------------------------------------------------------*/
 
 #endif  /* _MAIN_H_ */

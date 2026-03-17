@@ -11,11 +11,10 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <systick.h>
+#include <main.h>
 #include <stm32f1xx_ll_rcc.h>
 #include <stm32f1xx_ll_utils.h>
 #include <stm32f1xx_ll_cortex.h>
-#include <main.h>
-#include <critical.h>
 
 /* Private variables ---------------------------------------------------------*/
 

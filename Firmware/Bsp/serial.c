@@ -11,8 +11,8 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <serial.h>
-#include <critical.h>
 #include <main.h>
+#include <critical.h>
 
 /* Exported C functions ------------------------------------------------------*/
 

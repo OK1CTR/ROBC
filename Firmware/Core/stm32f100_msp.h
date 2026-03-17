@@ -1,8 +1,8 @@
 /**
- * @file       stm32f1xx_msp.h
+ * @file       stm32f100_msp.h
  * @author     OK1CTR
  * @date       Mar 2026
- * @brief      MCU specific module
+ * @brief      MCU specific module for STM32F100
  *
  * @addtogroup grMsp
  * @{
