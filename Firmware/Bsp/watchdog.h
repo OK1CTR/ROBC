@@ -1,15 +1,15 @@
 /**
- * @file       iwdg.h
+ * @file       watchdog.h
  * @author     OK1CTR
  * @date       Feb 2026
- * @brief      Independent watchdog module
+ * @brief      Watchdog module
  *
- * @addtogroup grIwdg
+ * @addtogroup grWatchdog
  * @{
  */
 
-#ifndef _IWDG_H_
-#define _IWDG_H_
+#ifndef _WATCHDOG_H_
+#define _WATCHDOG_H_
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -18,17 +18,17 @@
 /* Functions -----------------------------------------------------------------*/
 
 /**
- * @brief IWDG initialization
+ * @brief Watchdog initialization
  */
-extern void iwdg_init();
+extern void watchdog_init();
 
 /**
- * @brief Reset the IWDG timer
+ * @brief Reset the watchdog
  */
-extern void iwdg_hit();
+extern void watchdog_hit();
 
 /* ---------------------------------------------------------------------------*/
 
-#endif  /* _IWDG_H_ */
+#endif  /* _WATCHDOG_H_ */
 
 /** @} */

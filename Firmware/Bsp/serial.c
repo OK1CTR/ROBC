@@ -11,7 +11,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <serial.h>
-#include <main.h>
+#include <stdio.h>
 #include <critical.h>
 
 /* Exported C functions ------------------------------------------------------*/
@@ -19,10 +19,10 @@
 #ifdef CONSOLE_SERIAL_1
 
 /* Write a character into the output buffer */
-int _write(int file, char *ptr, int len)
+int _write(int file, char *data, int len)
 {
-    __NOP();
-    return serial_insert_tx((uint8_t)ptr[0]);
+    return serial_insert_tx((uint8_t)data[0]);
+    return len;
 }
 
 
@@ -60,20 +60,20 @@ typedef enum
 /* Serial port output ring buffer */
 static uint8_t ser_out_bf[TX_BF_LEN];
 /* Serial port output buffer write pointer - head */
-static uint32_t ser_out_head = 0;
+static volatile uint32_t ser_out_head = 0;
 /* Serial port output buffer read pointer - tail */
-static uint32_t ser_out_tail = 0;
+static volatile uint32_t ser_out_tail = 0;
 /* Transmission in progress */
-static bool is_transmit = true;
+static volatile bool is_transmit = false;
 
 /* Serial port input ring buffer */
 static uint8_t ser_in_bf[RX_BF_LEN];
 /* Serial port input buffer write pointer - head */
-static uint32_t ser_in_head = 0;
+static volatile uint32_t ser_in_head = 0;
 /* Serial port input buffer read pointer - tail */
-static uint32_t ser_in_tail = 0;
+static volatile uint32_t ser_in_tail = 0;
 /* Received characters are available */
-static bool is_received = true;
+static volatile bool is_received = false;
 
 /* Interface state */
 static volatile state_e state;
@@ -113,7 +113,6 @@ void serial_init()
 
     // USART1 initialization
     NVIC_SetPriority(USART1_IRQ_N, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
-    NVIC_EnableIRQ(USART1_IRQ_N);
     USART_InitStruct.BaudRate = USART1_BAUD_RATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
@@ -125,12 +124,6 @@ void serial_init()
     LL_USART_ConfigAsyncMode(USART1_USART);
     LL_USART_Enable(USART1_USART);
 
-    state = state_init;
-
-    LL_USART_EnableIT_RXNE(USART1_USART);  // receive interrupt enable
-    LL_USART_DisableIT_TXE(USART1_USART);  // transmit interrupt disable
-    LL_USART_EnableIT_TC(USART1_USART);  // transmit complete interrupt disable
-
     // initialize variables - transmitter
     is_transmit = false;
     ser_out_head = 0;
@@ -140,6 +133,13 @@ void serial_init()
     is_received = false;
     ser_in_head = 0;
     ser_in_tail = 0;
+
+    LL_USART_EnableIT_RXNE(USART1_USART);  // receive interrupt enable
+    LL_USART_DisableIT_TXE(USART1_USART);  // transmit interrupt disable
+    LL_USART_DisableIT_TC(USART1_USART);  // transmit complete interrupt disable
+    NVIC_EnableIRQ(USART1_IRQ_N);
+
+    state = state_init;
 }
 
 
@@ -179,7 +179,6 @@ void serial_wait_tx_empty()
 {
     while (is_transmit || !LL_USART_IsActiveFlag_TXE(USART1_USART))
     {
-        __NOP();
     }
 }
 
@@ -239,6 +238,7 @@ void serial_transmit()
 
     LL_USART_TransmitData8(USART1_USART, c);
     LL_USART_EnableIT_TXE(USART1_USART);
+    LL_USART_EnableIT_TC(USART1_USART);
 }
 
 /* ISR -----------------------------------------------------------------------*/
@@ -284,6 +284,7 @@ void USART1_IRQ_HANDLER()
     // end of transmission
     if (LL_USART_IsActiveFlag_TC(USART1_USART))
     {
+        LL_USART_DisableIT_TC(USART1_USART);
         driver_disable();
     }
 }

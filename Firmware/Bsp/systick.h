@@ -66,6 +66,12 @@ extern void tick_timer_set(ticks_t *tmr, ticks_t ticks);
  */
 extern bool tick_timer_expired(ticks_t *tmr);
 
+/**
+ * @brief Delay for given number of ticks
+ * @param ticks Given number of ticks
+ */
+extern void tick_delay(uint32_t ticks);
+
 /* ---------------------------------------------------------------------------*/
 
 #endif  /* _SYSTICK_H_ */

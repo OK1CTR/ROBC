@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <main.h>
 
 /* Exported C functions ------------------------------------------------------*/
 
@@ -23,11 +24,11 @@
 /**
  * @brief Write a message into the output buffer
  * @param file Standard parameter, not used here
- * @param *ptr Pointer to message to write
+ * @param *data Pointer to message to write
  * @param len Message length, only 1 here
  * @return Number of characters written, only 1 here
  */
-extern int _write(int file, char *ptr, int len);
+extern int _write(int file, char *data, int len);
 
 /**
  * @brief Wait to all characters are sent

@@ -11,7 +11,6 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include <main.h>
-#include <iwdg.h>
 #include <systick.h>
 #include <rtc.h>
 #include <serial.h>
@@ -19,9 +18,12 @@
 #include <stdio.h>
 #include <i2c.h>
 #include <flag.h>
+#include <watchdog.h>
 
 /* Definitions ---------------------------------------------------------------*/
 
+//! Quick rate task period in SysTick cycles
+#define RUN_PERIOD_QUICK               tick_ms(125)
 //! Medium rate task period in SysTick cycles
 #define RUN_PERIOD_MEDIUM              tick_ms(1000)
 
@@ -30,36 +32,44 @@
 /* The application entry point */
 int main(void)
 {
-    ticks_t tmr_run_medium;
+    ticks_t tmr_run_medium, tmr_run_quick;
     int cnt = 1;
 
-    // MCU system initialization
+    // modules initialization
     msp_init();
-    iwdg_init();
     gpio_init();
-
-    // modules initialization/
-    flag_init();
+    watchdog_init();
     tick_init();
     rtc_init();
     serial_init();
     i2c_init();
+    flag_init();
 
     // local settings
-    tick_timer_set(&tmr_run_medium, RUN_PERIOD_MEDIUM);
+
+    // before start
     printf("Start\n");
+
+    // periodic tasks
+    tick_timer_set(&tmr_run_medium, RUN_PERIOD_MEDIUM);
+    tick_timer_set(&tmr_run_quick, RUN_PERIOD_QUICK);
 
     // infinite loop
     while (1)
     {
         serial_job();
 
+        if (tick_timer_expired(&tmr_run_quick))
+        {
+            tick_timer_set(&tmr_run_quick, RUN_PERIOD_QUICK);
+            watchdog_hit();
+        }
+
         if (tick_timer_expired(&tmr_run_medium))
         {
             tick_timer_set(&tmr_run_medium, RUN_PERIOD_MEDIUM);
             printf("Tick %d\n", cnt++);
-            i2c_write(I2C_LED_BAR, cnt & 0xFF);
-            iwdg_hit();
+            i2c1_write_buf(I2C_LED_BAR, ~(cnt & 0xFF), 0);
         }
     }
 }

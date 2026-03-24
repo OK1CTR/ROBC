@@ -12,6 +12,7 @@
 
 #include <systick.h>
 #include <main.h>
+#include <critical.h>
 #include <stm32f1xx_ll_rcc.h>
 #include <stm32f1xx_ll_utils.h>
 #include <stm32f1xx_ll_cortex.h>
@@ -60,6 +61,16 @@ bool tick_timer_expired(ticks_t *tmr)
     ret = systick_counter - *tmr < 0x7FFFFFFFFFFFFFFF;
     critical_exit();
     return ret;
+}
+
+
+/* Delay for given number of ticks */
+void tick_delay(uint32_t ticks)
+{
+    ticks_t tmr = systick_counter + ticks;
+    while (systick_counter - tmr < 0x7FFFFFFFFFFFFFFF)
+    {
+    }
 }
 
 /* ISR -----------------------------------------------------------------------*/

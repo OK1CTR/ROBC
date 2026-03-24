@@ -30,6 +30,7 @@ void msp_init()
     NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
     LL_GPIO_AF_Remap_SWJ_NOJTAG();
     system_clock_config();
+    SystemCoreClockUpdate();
 
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOA);
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOB);
@@ -42,24 +43,28 @@ void msp_init()
 /* System clock configuration */
 static void system_clock_config(void)
 {
+    // enable HSE
     LL_RCC_HSE_Enable();
-
     while (LL_RCC_HSE_IsReady() != 1)
     {
     }
-    LL_RCC_LSI_Enable();
 
+    // ebable LSI
+    LL_RCC_LSI_Enable();
     while (LL_RCC_LSI_IsReady() != 1)
     {
     }
+
+    // backup domain reset, if not LSE
     LL_PWR_EnableBkUpAccess();
     if (LL_RCC_GetRTCClockSource() != LL_RCC_RTC_CLKSOURCE_LSE)
     {
         LL_RCC_ForceBackupDomainReset();
         LL_RCC_ReleaseBackupDomainReset();
     }
-    LL_RCC_LSE_Enable();
 
+    // enable LSE, set RTC on LSE
+    LL_RCC_LSE_Enable();
     while (LL_RCC_LSE_IsReady() != 1)
     {
     }
@@ -68,9 +73,10 @@ static void system_clock_config(void)
         LL_RCC_SetRTCClockSource(LL_RCC_RTC_CLKSOURCE_LSE);
     }
     LL_RCC_EnableRTC();
+
+    // enable and configure PLL
     LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSE_DIV_1, LL_RCC_PLL_MUL_3);
     LL_RCC_PLL_Enable();
-
     while (LL_RCC_PLL_IsReady() != 1)
     {
     }
@@ -79,9 +85,12 @@ static void system_clock_config(void)
     LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
     LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_PLL);
 
+    // set core clock
     while (LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_PLL)
     {
     }
+
+    // set ADC clock
     LL_RCC_SetADCClockSource(LL_RCC_ADC_CLKSRC_PCLK2_DIV_2);
 }
 
