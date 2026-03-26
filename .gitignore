@@ -3,3 +3,4 @@ CubeMX/*
 Firmware/.settings/language.settings.xml
 Firmware/HWver2
 Firmware/HWver3
+*.launch
