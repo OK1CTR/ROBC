@@ -35,11 +35,11 @@ void watchdog_init()
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     LL_GPIO_ResetOutputPin(WDI_GPIO_Port, WDI_Pin);
-    GPIO_InitStruct.Pin = DE1_Pin;
+    GPIO_InitStruct.Pin = WDI_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    LL_GPIO_Init(DE1_GPIO_Port, &GPIO_InitStruct);
+    LL_GPIO_Init(WDI_GPIO_Port, &GPIO_InitStruct);
 
     // toggle pin to first open the hardware watchdog
     LL_GPIO_TogglePin(WDI_GPIO_Port, WDI_Pin);

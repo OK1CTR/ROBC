@@ -238,7 +238,6 @@ void serial_transmit()
 
     LL_USART_TransmitData8(USART1_USART, c);
     LL_USART_EnableIT_TXE(USART1_USART);
-    LL_USART_EnableIT_TC(USART1_USART);
 }
 
 /* ISR -----------------------------------------------------------------------*/
@@ -248,6 +247,7 @@ void USART1_IRQ_HANDLER()
     // character transmit handler
     if (LL_USART_IsActiveFlag_TXE(USART1_USART))
     {
+        LL_USART_EnableIT_TC(USART1_USART);
         if (ser_out_head != ser_out_tail)
         {
             serial_transmit();

@@ -22,7 +22,7 @@ void gpio_init()
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
     LL_GPIO_ResetOutputPin(GPIOA, PAEN_Pin | LOW_Pin);
-    LL_GPIO_ResetOutputPin(GPIOB, WDI_Pin | RSCK_Pin | RSEL_Pin);
+    LL_GPIO_ResetOutputPin(GPIOB, RSCK_Pin | RSEL_Pin);
 
     GPIO_InitStruct.Pin = PAEN_Pin | LOW_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
@@ -30,7 +30,7 @@ void gpio_init()
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
     LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    GPIO_InitStruct.Pin = WDI_Pin | RSCK_Pin | RSEL_Pin;
+    GPIO_InitStruct.Pin = RSCK_Pin | RSEL_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
