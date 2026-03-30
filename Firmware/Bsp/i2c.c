@@ -16,6 +16,13 @@
 
 /* Private typedefs ----------------------------------------------------------*/
 
+/* Interface state */
+typedef enum
+{
+    state_reset = 0,
+    state_init
+} state_e;
+
 /*! I2C private variables */
 typedef struct
 {
@@ -33,6 +40,9 @@ typedef struct
 /*! I2C private variables */
 static i2c_context_t i2c1con;
 
+/*! Interface state */
+static state_e state;
+
 /* Functions -----------------------------------------------------------------*/
 
 /* I2C1 initialization */
@@ -47,9 +57,14 @@ void i2c_init()
        .bytenum = 0,
        .index = 0,
        .bytenum2 = 0,
-       .error = { 0 },
+       .error = {0},
        .buffer = NULL
     };
+
+    if (state != state_reset)
+    {
+        return;
+    }
 
     // ports
     GPIO_InitStruct.Pin = SCL_Pin;
@@ -84,6 +99,8 @@ void i2c_init()
 
     // private variables
     i2c1con = i2c1init;
+
+    state = state_init;
 }
 
 
@@ -97,6 +114,11 @@ void set_buffer(uint8_t *buf_ptr)
 /* Write buffer content to the I2C slave */
 void i2c1_write_buf(uint8_t addr, uint8_t reg, uint8_t n)
 {
+    if (state != state_init)
+    {
+        return;
+    }
+
     i2c1con.address = addr << 1;
     i2c1con.reg_adr = reg;
     i2c1con.bytenum = n;
@@ -111,6 +133,11 @@ void i2c1_write_buf(uint8_t addr, uint8_t reg, uint8_t n)
 /* Read content from the I2C slave into the buffer */
 void i2c1_read_buf(uint8_t addr, uint8_t reg, uint8_t n)
 {
+    if (state != state_init)
+    {
+        return;
+    }
+
     i2c1con.address = addr << 1;
     i2c1con.reg_adr = reg;
     i2c1con.bytenum = 0;

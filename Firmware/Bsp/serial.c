@@ -43,40 +43,60 @@ typedef enum
     state_init
 } state_e;
 
+/*! UART private variables */
+typedef struct
+{
+    uint32_t index;                       ///> serial port index
+    volatile bool is_transmit;            ///> transmission in progress
+    volatile uint32_t ser_out_head;       ///> output buffer write pointer - head
+    volatile uint32_t ser_out_tail;       ///> output buffer read pointer - tail
+    volatile bool is_received;            ///> received characters are available
+    volatile uint32_t ser_in_head;        ///> input buffer write pointer - head
+    volatile uint32_t ser_in_tail;        ///> input buffer read pointer - tail
+    uint32_t ser_out_len;                 ///> output ring buffer length
+    uint8_t *ser_out_bf;                  ///> output ring buffer pointer
+    uint32_t ser_in_len;                  ///> input ring buffer length
+    uint8_t *ser_in_bf;                   ///> input ring buffer pointer
+} uart_context_t;
+
 /* Private defines -----------------------------------------------------------*/
 
-#define TX_BF_LEN                          64
-#define RX_BF_LEN                          16
+/*! UART1 transmit data buffer length */
+#define TX1_BF_LEN                          64
+/*! UART1 receive data buffer length */
+#define RX1_BF_LEN                          16
+/*! UART2 transmit data buffer length */
+#define TX2_BF_LEN                          64
+/*! UART2 receive data buffer length */
+#define RX2_BF_LEN                          16
 
 /* Private macros ------------------------------------------------------------*/
 
-/* RS485 driver enable, switch to transmit */
-#define driver_enable() LL_GPIO_SetOutputPin(DE1_GPIO_Port, DE1_Pin)
-/* RS485 driver disable, switch to receive */
-#define driver_disable() LL_GPIO_ResetOutputPin(DE1_GPIO_Port, DE1_Pin)
+/*! RS485 driver 1 enable, switch to transmit */
+#define driver1_enable() LL_GPIO_SetOutputPin(DE1_GPIO_Port, DE1_Pin)
+/*! RS485 driver 1 disable, switch to receive */
+#define driver1_disable() LL_GPIO_ResetOutputPin(DE1_GPIO_Port, DE1_Pin)
+/*! RS485 driver 2 enable, switch to transmit */
+#define driver2_enable() LL_GPIO_SetOutputPin(DE2_GPIO_Port, DE2_Pin)
+/*! RS485 driver 2 disable, switch to receive */
+#define driver2_disable() LL_GPIO_ResetOutputPin(DE2_GPIO_Port, DE2_Pin)
 
 /* Private variables ---------------------------------------------------------*/
 
-/* Serial port output ring buffer */
-static uint8_t ser_out_bf[TX_BF_LEN];
-/* Serial port output buffer write pointer - head */
-static volatile uint32_t ser_out_head = 0;
-/* Serial port output buffer read pointer - tail */
-static volatile uint32_t ser_out_tail = 0;
-/* Transmission in progress */
-static volatile bool is_transmit = false;
-
-/* Serial port input ring buffer */
-static uint8_t ser_in_bf[RX_BF_LEN];
-/* Serial port input buffer write pointer - head */
-static volatile uint32_t ser_in_head = 0;
-/* Serial port input buffer read pointer - tail */
-static volatile uint32_t ser_in_tail = 0;
-/* Received characters are available */
-static volatile bool is_received = false;
-
-/* Interface state */
-static volatile state_e state;
+/*! UART1 private variables */
+static uart_context_t us1 = {0};
+/*! UART2 private variables */
+static uart_context_t us2 = {0};
+/*! UART1 output ring buffer */
+uint8_t ser_out_bf1[TX1_BF_LEN];
+/*! UART1 input ring buffer */
+uint8_t ser_in_bf1[RX1_BF_LEN];
+/*! UART2 output ring buffer */
+uint8_t ser_out_bf2[TX2_BF_LEN];
+/*! UART2 input ring buffer */
+uint8_t ser_in_bf2[RX2_BF_LEN];
+/*! Interface state */
+static state_e state;
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -92,6 +112,7 @@ void serial_init()
     }
 
     USART1_CLOCK_EN();
+    USART2_CLOCK_EN();
 
     // transmit pin initialization
     GPIO_InitStruct.Pin = TX1_Pin;
@@ -99,20 +120,28 @@ void serial_init()
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
     LL_GPIO_Init(TX1_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = TX2_Pin;
+    LL_GPIO_Init(TX2_GPIO_Port, &GPIO_InitStruct);
 
     // receive pin initialization
     GPIO_InitStruct.Pin = RX1_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
     LL_GPIO_Init(RX1_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = RX2_Pin;
+    LL_GPIO_Init(RX2_GPIO_Port, &GPIO_InitStruct);
 
     // control pin initialization
     LL_GPIO_ResetOutputPin(DE1_GPIO_Port, DE1_Pin);
+    LL_GPIO_ResetOutputPin(DE2_GPIO_Port, DE2_Pin);
     GPIO_InitStruct.Pin = DE1_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
     LL_GPIO_Init(DE1_GPIO_Port, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = DE2_Pin;
+    LL_GPIO_Init(DE2_GPIO_Port, &GPIO_InitStruct);
 
     // USART1 initialization
     NVIC_SetPriority(USART1_IRQ_N, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
+    NVIC_SetPriority(USART2_IRQ_N, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
     USART_InitStruct.BaudRate = USART1_BAUD_RATE;
     USART_InitStruct.DataWidth = LL_USART_DATAWIDTH_8B;
     USART_InitStruct.StopBits = LL_USART_STOPBITS_1;
@@ -121,23 +150,55 @@ void serial_init()
     USART_InitStruct.HardwareFlowControl = LL_USART_HWCONTROL_NONE;
     USART_InitStruct.OverSampling = LL_USART_OVERSAMPLING_16;
     LL_USART_Init(USART1_USART, &USART_InitStruct);
+    USART_InitStruct.BaudRate = USART2_BAUD_RATE;
+    LL_USART_Init(USART2_USART, &USART_InitStruct);
     LL_USART_ConfigAsyncMode(USART1_USART);
+    LL_USART_ConfigAsyncMode(USART2_USART);
     LL_USART_Enable(USART1_USART);
+    LL_USART_Enable(USART2_USART);
+
+    // initialize variables
+    us1.index = 1;
+    us2.index = 2;
 
     // initialize variables - transmitter
-    is_transmit = false;
-    ser_out_head = 0;
-    ser_out_tail = 0;
+    us1.ser_out_bf = ser_out_bf1;
+    us2.ser_out_bf = ser_out_bf2;
+    us1.ser_out_len = TX1_BF_LEN;
+    us2.ser_out_len = TX2_BF_LEN;
+    us1.is_transmit = false;
+    us2.is_transmit = false;
+    us1.ser_out_head = 0;
+    us2.ser_out_head = 0;
+    us1.ser_out_tail = 0;
+    us2.ser_out_tail = 0;
 
     // initialize variables - receiver
-    is_received = false;
-    ser_in_head = 0;
-    ser_in_tail = 0;
+    us1.ser_in_bf = ser_in_bf1;
+    us2.ser_in_bf = ser_in_bf2;
+    us1.ser_in_len = RX1_BF_LEN;
+    us2.ser_in_len = RX2_BF_LEN;
+    us1.is_received = false;
+    us2.is_received = false;
+    us1.ser_in_head = 0;
+    us2.ser_in_head = 0;
+    us1.ser_in_tail = 0;
+    us2.ser_in_tail = 0;
 
-    LL_USART_EnableIT_RXNE(USART1_USART);  // receive interrupt enable
-    LL_USART_DisableIT_TXE(USART1_USART);  // transmit interrupt disable
-    LL_USART_DisableIT_TC(USART1_USART);  // transmit complete interrupt disable
+    // receive interrupt enable
+    LL_USART_EnableIT_RXNE(USART1_USART);
+    LL_USART_EnableIT_RXNE(USART2_USART);
+
+    // transmit interrupt disable
+    LL_USART_DisableIT_TXE(USART1_USART);
+    LL_USART_DisableIT_TXE(USART2_USART);
+
+    // transmit complete interrupt disable
+    LL_USART_DisableIT_TC(USART1_USART);
+    LL_USART_DisableIT_TC(USART2_USART);
+
     NVIC_EnableIRQ(USART1_IRQ_N);
+    NVIC_EnableIRQ(USART2_IRQ_N);
 
     state = state_init;
 }

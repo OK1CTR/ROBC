@@ -31,6 +31,16 @@
 
 /* Defines -------------------------------------------------------------------*/
 
+/* Debug */
+#define SWDIO_Pin                    LL_GPIO_PIN_13
+#define SWDIO_GPIO_Port              GPIOA
+#define SWCLK_Pin                    LL_GPIO_PIN_14
+#define SWCLK_GPIO_Port              GPIOA
+
+/* HW Watchdog */
+#define WDI_Pin                      LL_GPIO_PIN_2
+#define WDI_GPIO_Port                GPIOB
+
 /* USART1 */
 #define TX1_Pin                      LL_GPIO_PIN_9
 #define TX1_GPIO_Port                GPIOA
@@ -47,12 +57,38 @@
 #define CONSOLE_SERIAL_1
 
 /* USART2 */
-#define DE2_Pin LL_GPIO_PIN_1
-#define DE2_GPIO_Port GPIOA
-#define TX2_Pin LL_GPIO_PIN_2
-#define TX2_GPIO_Port GPIOA
-#define RX2_Pin LL_GPIO_PIN_3
-#define RX2_GPIO_Port GPIOA
+#define DE2_Pin                      LL_GPIO_PIN_1
+#define DE2_GPIO_Port                GPIOA
+#define TX2_Pin                      LL_GPIO_PIN_2
+#define TX2_GPIO_Port                GPIOA
+#define RX2_Pin                      LL_GPIO_PIN_3
+#define RX2_GPIO_Port                GPIOA
+
+#define USART2_USART                 USART2
+#define USART2_CLOCK_EN()            LL_APB2_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2)
+#define USART2_BAUD_RATE             115200
+#define USART2_IRQ_N                 USART2_IRQn
+#define USART2_IRQ_HANDLER           USART2_IRQHandler
+
+/* I2C */
+#define SCL_Pin                      LL_GPIO_PIN_6
+#define SCL_GPIO_Port                GPIOB
+#define SDA_Pin                      LL_GPIO_PIN_7
+#define SDA_GPIO_Port                GPIOB
+
+#define I2C1_I2C                     I2C1
+#define I2C1_CLOCK_EN()              LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1)
+#define I2C1_CLOCK_SPEED             100000
+#define I2C1_IRQ_N                   I2C1_EV_IRQn
+#define I2C1_IRQ_HANDLER             I2C1_EV_IRQHandler
+#define I2C1_ERROR_IRQ_N             I2C1_ER_IRQn
+#define I2C1_ERROR_IRQ_HANDLER       I2C1_ER_IRQHandler
+
+/*! I2C address of the LED bar register */
+#define I2C_LED_BAR                  0x20
+
+/*! Macro to display symbol on the LED bar*/
+#define i2c_led_bar(a)               i2c1_write_buf(I2C_LED_BAR, ~((a) & 0xFF), 0)
 
 /* ADC */
 #define ADC0_Pin LL_GPIO_PIN_0
@@ -76,10 +112,6 @@
 #define LOW_Pin LL_GPIO_PIN_12
 #define LOW_GPIO_Port GPIOA
 
-/* HW Watchdog */
-#define WDI_Pin LL_GPIO_PIN_2
-#define WDI_GPIO_Port GPIOB
-
 /* Radio */
 #define RMISO_Pin LL_GPIO_PIN_10
 #define RMISO_GPIO_Port GPIOB
@@ -98,12 +130,6 @@
 #define RIRQ_Pin LL_GPIO_PIN_9
 #define RIRQ_GPIO_Port GPIOB
 
-/* Debug */
-#define SWDIO_Pin LL_GPIO_PIN_13
-#define SWDIO_GPIO_Port GPIOA
-#define SWCLK_Pin LL_GPIO_PIN_14
-#define SWCLK_GPIO_Port GPIOA
-
 /* Memory storage */
 #define MNSS_Pin LL_GPIO_PIN_15
 #define MNSS_GPIO_Port GPIOA
@@ -113,22 +139,6 @@
 #define MMISO_GPIO_Port GPIOB
 #define MMOSI_Pin LL_GPIO_PIN_5
 #define MMOSI_GPIO_Port GPIOB
-
-/* I2C */
-#define SCL_Pin                      LL_GPIO_PIN_6
-#define SCL_GPIO_Port                GPIOB
-#define SDA_Pin                      LL_GPIO_PIN_7
-#define SDA_GPIO_Port                GPIOB
-
-#define I2C1_I2C                     I2C1
-#define I2C1_CLOCK_EN()              LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1)
-#define I2C1_CLOCK_SPEED             100000
-#define I2C1_IRQ_N                   I2C1_EV_IRQn
-#define I2C1_IRQ_HANDLER             I2C1_EV_IRQHandler
-#define I2C1_ERROR_IRQ_N             I2C1_ER_IRQn
-#define I2C1_ERROR_IRQ_HANDLER       I2C1_ER_IRQHandler
-
-#define I2C_LED_BAR                  0x20
 
 
 #ifndef NVIC_PRIORITYGROUP_0

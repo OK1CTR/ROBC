@@ -69,7 +69,7 @@ int main(void)
         {
             tick_timer_set(&tmr_run_medium, RUN_PERIOD_MEDIUM);
             printf("Tick %d\n", cnt++);
-            i2c1_write_buf(I2C_LED_BAR, ~(cnt & 0xFF), 0);
+            i2c_led_bar(cnt);
         }
     }
 }
