@@ -17,6 +17,15 @@
 #include <stdbool.h>
 #include <main.h>
 
+/* Typedefs ------------------------------------------------------------------*/
+
+/* Serial port selection */
+typedef enum
+{
+    serial1 = 1,
+    serial2 = 2
+} serial_e;
+
 /* Exported C functions ------------------------------------------------------*/
 
 #ifdef CONSOLE_SERIAL_1
@@ -46,34 +55,34 @@ extern void serial_init();
 
 /**
  * @brief Serial interface regular job
- * @return True if communication in progress
+ * @return False
  */
 extern bool serial_job();
 
 /**
- * @brief Transmit next character from buffer via serial interface
- */
-extern void serial_transmit();
-
-/**
  * @brief Insert one character into the transmit data buffer
+ * @param serial Serial port selection
+ * @param c Character to send
  */
-extern int serial_insert_tx(uint8_t c);
+extern int serial_insert_tx(serial_e ser, uint8_t c);
 
 /**
  * @brief Wait for empty TX buffer
+ * @param serial Serial port selection
  */
-extern void serial_wait_tx_empty();
+extern void serial_wait_tx_empty(serial_e ser);
 
 /**
  * @brief Are any characters in the RX buffer
+ * @param serial Serial port selection
  */
-extern bool serial_is_rx_not_empty();
+extern bool serial_is_rx_not_empty(serial_e ser);
 
 /**
  * @brief Pull a character from the RX buffer
+ * @param serial Serial port selection
  */
-extern char serial_pull_rx();
+extern char serial_pull_rx(serial_e ser);
 
 /* ---------------------------------------------------------------------------*/
 

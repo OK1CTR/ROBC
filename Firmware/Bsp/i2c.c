@@ -50,21 +50,6 @@ void i2c_init()
 {
     LL_I2C_InitTypeDef I2C_InitStruct = {0};
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-    i2c_context_t i2c1init =
-    {
-       .address = 0,
-       .reg_adr = 0,
-       .bytenum = 0,
-       .index = 0,
-       .bytenum2 = 0,
-       .error = {0},
-       .buffer = NULL
-    };
-
-    if (state != state_reset)
-    {
-        return;
-    }
 
     // ports
     GPIO_InitStruct.Pin = SCL_Pin;
@@ -98,7 +83,14 @@ void i2c_init()
     LL_I2C_SetOwnAddress2(I2C1_I2C, 0);
 
     // private variables
-    i2c1con = i2c1init;
+    i2c1con.address = 0;
+    i2c1con.reg_adr = 0;
+    i2c1con.bytenum = 0;
+    i2c1con.index = 0;
+    i2c1con.bytenum2 = 0;
+    i2c1con.error.noack1 = 0;
+    i2c1con.error.timeout1 = 0;
+    i2c1con.buffer = NULL;
 
     state = state_init;
 }

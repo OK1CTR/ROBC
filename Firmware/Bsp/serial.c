@@ -21,7 +21,7 @@
 /* Write a character into the output buffer */
 int _write(int file, char *data, int len)
 {
-    return serial_insert_tx((uint8_t)data[0]);
+    return serial_insert_tx(serial1, (uint8_t)data[0]);
     return len;
 }
 
@@ -29,7 +29,7 @@ int _write(int file, char *data, int len)
 /* Wait to all characters are sent */
 void _flush()
 {
-    serial_wait_tx_empty();
+    serial_wait_tx_empty(serial1);
 }
 
 #endif  /* CONSOLE_SERIAL_1 */
@@ -43,10 +43,10 @@ typedef enum
     state_init
 } state_e;
 
-/*! UART private variables */
+/*! UART context structure */
 typedef struct
 {
-    uint32_t index;                       ///> serial port index
+    USART_TypeDef *USARTx;                ///> serial port address offset
     volatile bool is_transmit;            ///> transmission in progress
     volatile uint32_t ser_out_head;       ///> output buffer write pointer - head
     volatile uint32_t ser_out_tail;       ///> output buffer read pointer - tail
@@ -83,10 +83,9 @@ typedef struct
 
 /* Private variables ---------------------------------------------------------*/
 
-/*! UART1 private variables */
-static uart_context_t us1 = {0};
-/*! UART2 private variables */
-static uart_context_t us2 = {0};
+/*! UART private variables */
+static uart_context_t uc[2] = {0};
+
 /*! UART1 output ring buffer */
 uint8_t ser_out_bf1[TX1_BF_LEN];
 /*! UART1 input ring buffer */
@@ -95,8 +94,23 @@ uint8_t ser_in_bf1[RX1_BF_LEN];
 uint8_t ser_out_bf2[TX2_BF_LEN];
 /*! UART2 input ring buffer */
 uint8_t ser_in_bf2[RX2_BF_LEN];
+
 /*! Interface state */
 static state_e state;
+
+/* Private function prototypes -----------------------------------------------*/
+
+/**
+ * @brief Transmit next character from buffer via serial interface
+ * @param serial Serial port selection
+ */
+static void serial_transmit(serial_e ser);
+
+/**
+ * @brief Serial port ISR function
+ * @param serial Serial port selection
+ */
+static void serial_isr(serial_e ser);
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -105,11 +119,6 @@ void serial_init()
 {
     LL_USART_InitTypeDef USART_InitStruct = {0};
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    if (state != state_reset)
-    {
-        return;
-    }
 
     USART1_CLOCK_EN();
     USART2_CLOCK_EN();
@@ -158,32 +167,32 @@ void serial_init()
     LL_USART_Enable(USART2_USART);
 
     // initialize variables
-    us1.index = 1;
-    us2.index = 2;
+    uc[1].USARTx = USART1_USART;
+    uc[2].USARTx = USART2_USART;
 
     // initialize variables - transmitter
-    us1.ser_out_bf = ser_out_bf1;
-    us2.ser_out_bf = ser_out_bf2;
-    us1.ser_out_len = TX1_BF_LEN;
-    us2.ser_out_len = TX2_BF_LEN;
-    us1.is_transmit = false;
-    us2.is_transmit = false;
-    us1.ser_out_head = 0;
-    us2.ser_out_head = 0;
-    us1.ser_out_tail = 0;
-    us2.ser_out_tail = 0;
+    uc[1].ser_out_bf = ser_out_bf1;
+    uc[2].ser_out_bf = ser_out_bf2;
+    uc[1].ser_out_len = TX1_BF_LEN;
+    uc[2].ser_out_len = TX2_BF_LEN;
+    uc[1].is_transmit = false;
+    uc[2].is_transmit = false;
+    uc[1].ser_out_head = 0;
+    uc[2].ser_out_head = 0;
+    uc[1].ser_out_tail = 0;
+    uc[2].ser_out_tail = 0;
 
     // initialize variables - receiver
-    us1.ser_in_bf = ser_in_bf1;
-    us2.ser_in_bf = ser_in_bf2;
-    us1.ser_in_len = RX1_BF_LEN;
-    us2.ser_in_len = RX2_BF_LEN;
-    us1.is_received = false;
-    us2.is_received = false;
-    us1.ser_in_head = 0;
-    us2.ser_in_head = 0;
-    us1.ser_in_tail = 0;
-    us2.ser_in_tail = 0;
+    uc[1].ser_in_bf = ser_in_bf1;
+    uc[2].ser_in_bf = ser_in_bf2;
+    uc[1].ser_in_len = RX1_BF_LEN;
+    uc[2].ser_in_len = RX2_BF_LEN;
+    uc[1].is_received = false;
+    uc[2].is_received = false;
+    uc[1].ser_in_head = 0;
+    uc[2].ser_in_head = 0;
+    uc[1].ser_in_tail = 0;
+    uc[2].ser_in_tail = 0;
 
     // receive interrupt enable
     LL_USART_EnableIT_RXNE(USART1_USART);
@@ -207,147 +216,185 @@ void serial_init()
 /* Serial interface regular job */
 bool serial_job()
 {
-    return is_transmit | !LL_USART_IsActiveFlag_TC(USART1_USART);
+    return false;
 }
 
 
 /* Insert one character into the transmit data buffer */
-int serial_insert_tx(uint8_t c)
+int serial_insert_tx(serial_e ser, uint8_t c)
 {
     int i, ret = 0;
+    uart_context_t *us = &uc[(uint32_t)ser];
 
+    // push character into output buffer
     critical_enter();
-    i = (uint32_t)(ser_out_head + 1) % (TX_BF_LEN);
-    if (i != ser_out_tail)
+    i = (uint32_t)(us->ser_out_head + 1) % us->ser_out_len;
+    if (i != us->ser_out_tail)
     {
-        ser_out_bf[ser_out_head] = c;
-        ser_out_head = i;
+        us->ser_out_bf[us->ser_out_head] = c;
+        us->ser_out_head = i;
         ret = 1;
     }
     critical_exit();
 
     // start the transmission, if not running
-    if (ret && !is_transmit)
+    if (ret && !us->is_transmit)
     {
-        serial_transmit();
+        serial_transmit(ser);
     }
     return ret;
 }
 
 
 /* Wait for empty TX buffer */
-void serial_wait_tx_empty()
+void serial_wait_tx_empty(serial_e ser)
 {
-    while (is_transmit || !LL_USART_IsActiveFlag_TXE(USART1_USART))
+    uart_context_t *us = &uc[(uint32_t)ser];
+
+    __DSB();
+    while (us->is_transmit || !LL_USART_IsActiveFlag_TXE(us->USARTx))
     {
     }
 }
 
 
 /* Are any characters in the RX buffer */
-bool serial_is_rx_not_empty()
+bool serial_is_rx_not_empty(serial_e ser)
 {
-    return is_received;
+    uart_context_t *us = &uc[(uint32_t)ser];
+    return us->is_received;
 }
 
 
 /* Pull a character from the RX buffer */
-char serial_pull_rx()
+char serial_pull_rx(serial_e ser)
 {
     uint8_t c;
+    uart_context_t *us = &uc[(uint32_t)ser];
 
+    // pull a character from the input buffer
     critical_enter();
-    if (ser_in_head != ser_in_tail)
+    if (us->ser_in_head != us->ser_in_tail)
     {
-        c = ser_in_bf[ser_in_tail];
-        ser_in_tail = (uint32_t)(ser_in_tail + 1) % (RX_BF_LEN);
+        c = us->ser_in_bf[us->ser_in_tail];
+        us->ser_in_tail = (uint32_t)(us->ser_in_tail + 1) % us->ser_in_len;
     }
     else
     {
         c = 0;
     }
 
-    if (ser_in_head == ser_in_tail && is_received)
+    if (us->ser_in_head == us->ser_in_tail && us->is_received)
     {
-        is_received = false;
+        us->is_received = false;
     }
     critical_exit();
 
     return (char)c;
 }
 
+/* Private functions ---------------------------------------------------------*/
 
 /* Transmit next character from buffer via serial interface */
-void serial_transmit()
+static void serial_transmit(serial_e ser)
 {
+    uart_context_t *us = &uc[(uint32_t)ser];
+
     if (state != state_init)
     {
         // discard everything
-        is_transmit = false;
-        ser_out_head = 0;
-        ser_out_tail = 0;
+        us->is_transmit = false;
+        us->ser_out_head = 0;
+        us->ser_out_tail = 0;
         return;
     }
 
-    is_transmit = true;
-    driver_enable();
+    // transmit state
+    us->is_transmit = true;
+    switch (ser)
+    {
+        case serial1: driver1_enable(); break;
+        case serial2: driver2_enable(); break;
+        default: break;
+    }
 
+    // pull character from output buffer
     critical_enter();
-    uint8_t c = ser_out_bf[ser_out_tail];
-    ser_out_tail = (uint32_t)(ser_out_tail + 1) % (TX_BF_LEN);
+    uint8_t c = us->ser_out_bf[us->ser_out_tail];
+    us->ser_out_tail = (uint32_t)(us->ser_out_tail + 1) % us->ser_out_len;
     critical_exit();
 
-    LL_USART_TransmitData8(USART1_USART, c);
-    LL_USART_EnableIT_TXE(USART1_USART);
+    LL_USART_TransmitData8(us->USARTx, c);
+    LL_USART_EnableIT_TXE(us->USARTx);
 }
 
-/* ISR -----------------------------------------------------------------------*/
 
-void USART1_IRQ_HANDLER()
+/* Serial port ISR function */
+static void serial_isr(serial_e ser)
 {
+    uart_context_t *us = &uc[(uint32_t)ser];
+
     // character transmit handler
-    if (LL_USART_IsActiveFlag_TXE(USART1_USART))
+    if (LL_USART_IsActiveFlag_TXE(us->USARTx))
     {
-        LL_USART_EnableIT_TC(USART1_USART);
-        if (ser_out_head != ser_out_tail)
+        LL_USART_EnableIT_TC(us->USARTx);
+        if (us->ser_out_head != us->ser_out_tail)
         {
-            serial_transmit();
-            is_transmit = true;  // still set
+            serial_transmit(ser);
+            us->is_transmit = true;  // still set
         } else {
-            LL_USART_DisableIT_TXE(USART1_USART);
-            is_transmit = false;
+            LL_USART_DisableIT_TXE(us->USARTx);
+            us->is_transmit = false;
         }
     }
 
     // character receive handler
-    if (LL_USART_IsActiveFlag_RXNE(USART1_USART))
+    if (LL_USART_IsActiveFlag_RXNE(us->USARTx))
     {
         uint32_t i;
         bool ret = false;
 
+        // receive character and push it into the receive buffer
         critical_enter();
-        i = (uint32_t)(ser_in_head + 1) % (RX_BF_LEN);
-        if (i != ser_in_tail)
+        i = (uint32_t)(us->ser_in_head + 1) % us->ser_in_len;
+        if (i != us->ser_in_tail)
         {
-            ser_in_bf[ser_in_head] = LL_USART_ReceiveData8(USART1_USART);
-            ser_in_head = i;
-            is_received = true;
+            us->ser_in_bf[us->ser_in_head] = LL_USART_ReceiveData8(us->USARTx);
+            us->ser_in_head = i;
+            us->is_received = true;
             ret = true;
         }
         critical_exit();
 
         if (!ret)
         {
-            LL_USART_ClearFlag_RXNE(USART1_USART);  // just discard received character
+            LL_USART_ClearFlag_RXNE(us->USARTx);  // just discard received character
         }
     }
 
     // end of transmission
-    if (LL_USART_IsActiveFlag_TC(USART1_USART))
+    if (LL_USART_IsActiveFlag_TC(us->USARTx))
     {
-        LL_USART_DisableIT_TC(USART1_USART);
-        driver_disable();
+        LL_USART_DisableIT_TC(us->USARTx);
+        switch (ser)
+        {
+            case serial1: driver1_disable(); break;
+            case serial2: driver2_disable(); break;
+            default: break;
+        }
     }
+}
+
+/* ISR -----------------------------------------------------------------------*/
+
+void USART1_IRQ_HANDLER()
+{
+    serial_isr(serial1);
+}
+
+void USART2_IRQ_HANDLER()
+{
+    serial_isr(serial2);
 }
 
 /* ---------------------------------------------------------------------------*/

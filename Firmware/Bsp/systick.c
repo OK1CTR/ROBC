@@ -68,6 +68,7 @@ bool tick_timer_expired(ticks_t *tmr)
 void tick_delay(uint32_t ticks)
 {
     ticks_t tmr = systick_counter + ticks;
+    __DSB;
     while (!(systick_counter - tmr < 0x7FFFFFFFFFFFFFFF))
     {
     }
