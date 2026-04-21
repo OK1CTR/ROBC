@@ -15,6 +15,7 @@
 
 #include <string.h>
 #include <stdint.h>
+#include <stdbool.h>
 
 /* Definitions----------------------------------------------------------------*/
 
@@ -29,6 +30,9 @@
 
 //! Busy status
 #define STATUS_BUSY         3
+
+//! Attribute for structure packing
+#define _PACKED_ __attribute__((__packed__))
 
 /* Macros ------------------------------------------------------------------*/
 
@@ -92,14 +96,20 @@ typedef int16_t Status_t;
 /* Functions -----------------------------------------------------------------*/
 
 /**
+ * @brief Make short delay based on loop cycles
+ * @param us Number of microseconds
+ */
+extern void cycle_delay(uint32_t us);
+
+/**
  * @brief Standard error handler
  */
-extern void Error_Handler(void);
+extern void error_handler(void);
 
 /**
  * @brief Extended error handler
  */
-extern void Error_Handler_ex(char *file, int line);
+extern void error_handler_ex(char *file, int line);
 
 /* ---------------------------------------------------------------------------*/
 

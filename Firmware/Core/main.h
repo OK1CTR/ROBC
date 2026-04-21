@@ -13,6 +13,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+#include <common.h>
+
 #if defined BSP_HW_VER_2
 #include <bsp_hwver2.h>
 #elif defined BSP_HW_VER_3

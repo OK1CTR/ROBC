@@ -19,6 +19,8 @@
 #include <i2c.h>
 #include <flag.h>
 #include <watchdog.h>
+#include <ax5043.h>
+#include <radio.h>
 
 /* Definitions ---------------------------------------------------------------*/
 
@@ -44,6 +46,8 @@ int main(void)
     serial_init();
     i2c_init();
     flag_init();
+    ax_init();
+    radio_init();
 
     // local settings
 
@@ -142,56 +146,6 @@ static void MX_ADC1_Init(void)
 
 }
 
-/**
-  * @brief SPI1 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_SPI1_Init(void)
-{
-  LL_SPI_InitTypeDef SPI_InitStruct = {0};
-  LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
-
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOA);
-  LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_GPIOB);
-  /**SPI1 GPIO Configuration
-  PA15   ------> SPI1_NSS
-  PB3   ------> SPI1_SCK
-  PB4   ------> SPI1_MISO
-  PB5   ------> SPI1_MOSI
-  */
-  GPIO_InitStruct.Pin = MNSS_Pin;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
-  LL_GPIO_Init(MNSS_GPIO_Port, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin = MSCK_Pin|MMOSI_Pin;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-  GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
-  GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-  LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-  GPIO_InitStruct.Pin = MMISO_Pin;
-  GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
-  LL_GPIO_Init(MMISO_GPIO_Port, &GPIO_InitStruct);
-
-  LL_GPIO_AF_EnableRemap_SPI1();
-
-  /* SPI1 parameter configuration*/
-  SPI_InitStruct.TransferDirection = LL_SPI_FULL_DUPLEX;
-  SPI_InitStruct.Mode = LL_SPI_MODE_MASTER;
-  SPI_InitStruct.DataWidth = LL_SPI_DATAWIDTH_8BIT;
-  SPI_InitStruct.ClockPolarity = LL_SPI_POLARITY_LOW;
-  SPI_InitStruct.ClockPhase = LL_SPI_PHASE_1EDGE;
-  SPI_InitStruct.NSS = LL_SPI_NSS_HARD_INPUT;
-  SPI_InitStruct.BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV2;
-  SPI_InitStruct.BitOrder = LL_SPI_MSB_FIRST;
-  SPI_InitStruct.CRCCalculation = LL_SPI_CRCCALCULATION_DISABLE;
-  SPI_InitStruct.CRCPoly = 10;
-  LL_SPI_Init(SPI1, &SPI_InitStruct);
-}
 #endif
 
 /* ---------------------------------------------------------------------------*/

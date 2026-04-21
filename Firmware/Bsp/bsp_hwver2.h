@@ -13,35 +13,38 @@
 
 /* Includes ------------------------------------------------------------------*/
 
-#include "stm32f1xx_ll_adc.h"
-#include "stm32f1xx_ll_i2c.h"
-#include "stm32f1xx_ll_iwdg.h"
-#include "stm32f1xx_ll_rcc.h"
-#include "stm32f1xx_ll_bus.h"
-#include "stm32f1xx_ll_system.h"
-#include "stm32f1xx_ll_exti.h"
-#include "stm32f1xx_ll_cortex.h"
-#include "stm32f1xx_ll_utils.h"
-#include "stm32f1xx_ll_pwr.h"
-#include "stm32f1xx_ll_dma.h"
-#include "stm32f1xx_ll_rtc.h"
-#include "stm32f1xx_ll_spi.h"
-#include "stm32f1xx_ll_usart.h"
-#include "stm32f1xx_ll_gpio.h"
+#include <stm32f1xx_ll_adc.h>
+#include <stm32f1xx_ll_i2c.h>
+#include <stm32f1xx_ll_iwdg.h>
+#include <stm32f1xx_ll_rcc.h>
+#include <stm32f1xx_ll_bus.h>
+#include <stm32f1xx_ll_system.h>
+#include <stm32f1xx_ll_exti.h>
+#include <stm32f1xx_ll_cortex.h>
+#include <stm32f1xx_ll_utils.h>
+#include <stm32f1xx_ll_pwr.h>
+#include <stm32f1xx_ll_dma.h>
+#include <stm32f1xx_ll_rtc.h>
+#include <stm32f1xx_ll_spi.h>
+#include <stm32f1xx_ll_usart.h>
+#include <stm32f1xx_ll_gpio.h>
 
-/* Defines -------------------------------------------------------------------*/
+#include <spi_emu.h>
 
-/* Debug */
+/* Defines - debug -----------------------------------------------------------*/
+
 #define SWDIO_Pin                    LL_GPIO_PIN_13
 #define SWDIO_GPIO_Port              GPIOA
 #define SWCLK_Pin                    LL_GPIO_PIN_14
 #define SWCLK_GPIO_Port              GPIOA
 
-/* HW Watchdog */
+/* Defines - watchdog --------------------------------------------------------*/
+
 #define WDI_Pin                      LL_GPIO_PIN_2
 #define WDI_GPIO_Port                GPIOB
 
-/* USART1 */
+/* Defines - UART 1 ----------------------------------------------------------*/
+
 #define TX1_Pin                      LL_GPIO_PIN_9
 #define TX1_GPIO_Port                GPIOA
 #define RX1_Pin                      LL_GPIO_PIN_10
@@ -56,7 +59,8 @@
 #define USART1_IRQ_HANDLER           USART1_IRQHandler
 #define CONSOLE_SERIAL_1
 
-/* USART2 */
+/* Defines - UATZ 2 ----------------------------------------------------------*/
+
 #define DE2_Pin                      LL_GPIO_PIN_1
 #define DE2_GPIO_Port                GPIOA
 #define TX2_Pin                      LL_GPIO_PIN_2
@@ -70,7 +74,8 @@
 #define USART2_IRQ_N                 USART2_IRQn
 #define USART2_IRQ_HANDLER           USART2_IRQHandler
 
-/* I2C */
+/* Defines - I2C -------------------------------------------------------------*/
+
 #define SCL_Pin                      LL_GPIO_PIN_6
 #define SCL_GPIO_Port                GPIOB
 #define SDA_Pin                      LL_GPIO_PIN_7
@@ -84,13 +89,56 @@
 #define I2C1_ERROR_IRQ_N             I2C1_ER_IRQn
 #define I2C1_ERROR_IRQ_HANDLER       I2C1_ER_IRQHandler
 
+/* Defines - LED display -----------------------------------------------------*/
+
 /*! I2C address of the LED bar register */
 #define I2C_LED_BAR                  0x20
 
-/*! Macro to display symbol on the LED bar*/
+/*! Macro to display symbol on the LED bar */
 #define i2c_led_bar(a)               i2c1_write_buf(I2C_LED_BAR, ~((a) & 0xFF), 0)
 
-/* ADC */
+/* Defines - radio -----------------------------------------------------------*/
+
+#define MISO_EMU_Pin                 LL_GPIO_PIN_10
+#define MISO_EMU_GPIO_Port           GPIOB
+#define MOSI_EMU_Pin                 LL_GPIO_PIN_11
+#define MOSI_EMU_GPIO_Port           GPIOB
+#define SCK_EMU_Pin                  LL_GPIO_PIN_12
+#define SCK_EMU_GPIO_Port            GPIOB
+
+#define rspi_init()                  spi_emu_init()
+#define rspi_trx8(a)                 spi_emu_trx8(a)
+
+#define RSEL_Pin                     LL_GPIO_PIN_8
+#define RSEL_GPIO_Port               GPIOB
+
+#define RIRQ_Pin                     LL_GPIO_PIN_9
+#define RIRQ_GPIO_Port               GPIOB
+#define RIRQ_GPIO_AF_EXTI_Port       LL_GPIO_AF_EXTI_PORTB
+#define RIRQ_GPIO_AF_EXTI_Line       LL_GPIO_AF_EXTI_LINE9
+#define RIRQ_EXTI_Line               LL_EXTI_LINE_9
+#define RIRQn                        EXTI9_5_IRQn
+#define RIRQHandler                  EXTI9_5_IRQHandler
+
+#define RDCL_Pin                     LL_GPIO_PIN_13
+#define RDCL_GPIO_Port               GPIOB
+#define RDDA_Pin                     LL_GPIO_PIN_14
+#define RDDA_GPIO_Port               GPIOB
+
+#define PAEN_Pin                     LL_GPIO_PIN_8
+#define PAEN_GPIO_Port               GPIOA
+#define LOW_Pin                      LL_GPIO_PIN_12
+#define LOW_GPIO_Port                GPIOA
+
+/*! Reference XTAL frequency in Hz **/
+#define RXTAL_FREQUENCY              16368000L
+/*! Relative frequency error x 1E6 */
+#define RXTAL_F_ERROR_COMP           -973563L
+/*! Frequency correction enabled if true */
+#define RXTAL_F_ERROR_COMP_EN        0
+
+/* Defines - analog ----------------------------------------------------------*/
+
 #define ADC0_Pin LL_GPIO_PIN_0
 #define ADC0_GPIO_Port GPIOA
 #define ADC4_Pin LL_GPIO_PIN_4
@@ -104,44 +152,26 @@
 #define ADC8B1_Pin LL_GPIO_PIN_1
 #define ADC8B1_GPIO_Port GPIOB
 
-/* Temperature */
+/* Defines - temperature -----------------------------------------------------*/
+
 #define TMP_Pin LL_GPIO_PIN_7
 #define TMP_GPIO_Port GPIOA
 
-/* Power */
-#define LOW_Pin LL_GPIO_PIN_12
-#define LOW_GPIO_Port GPIOA
+/* Defines - external storage ------------------------------------------------*/
 
-/* Radio */
-#define RMISO_Pin LL_GPIO_PIN_10
-#define RMISO_GPIO_Port GPIOB
-#define RMOSI_Pin LL_GPIO_PIN_11
-#define RMOSI_GPIO_Port GPIOB
-#define RSCK_Pin LL_GPIO_PIN_12
-#define RSCK_GPIO_Port GPIOB
-#define RDCL_Pin LL_GPIO_PIN_13
-#define RDCL_GPIO_Port GPIOB
-#define RDA_Pin LL_GPIO_PIN_14
-#define RDA_GPIO_Port GPIOB
-#define PAEN_Pin LL_GPIO_PIN_8
-#define PAEN_GPIO_Port GPIOA
-#define RSEL_Pin LL_GPIO_PIN_8
-#define RSEL_GPIO_Port GPIOB
-#define RIRQ_Pin LL_GPIO_PIN_9
-#define RIRQ_GPIO_Port GPIOB
+#define MNSS_Pin                     LL_GPIO_PIN_15
+#define MNSS_GPIO_Port               GPIOA
+#define MSCK_Pin                     LL_GPIO_PIN_3
+#define MSCK_GPIO_Port               GPIOB
+#define MMISO_Pin                    LL_GPIO_PIN_4
+#define MMISO_GPIO_Port              GPIOB
+#define MMOSI_Pin                    LL_GPIO_PIN_5
+#define MMOSI_GPIO_Port              GPIOB
 
-/* Memory storage */
-#define MNSS_Pin LL_GPIO_PIN_15
-#define MNSS_GPIO_Port GPIOA
-#define MSCK_Pin LL_GPIO_PIN_3
-#define MSCK_GPIO_Port GPIOB
-#define MMISO_Pin LL_GPIO_PIN_4
-#define MMISO_GPIO_Port GPIOB
-#define MMOSI_Pin LL_GPIO_PIN_5
-#define MMOSI_GPIO_Port GPIOB
-
+/* Defines - interrupts ------------------------------------------------------*/
 
 #ifndef NVIC_PRIORITYGROUP_0
+
 #define NVIC_PRIORITYGROUP_0         ((uint32_t)0x00000007) /*!< 0 bit  for pre-emption priority,
                                                                  4 bits for subpriority */
 #define NVIC_PRIORITYGROUP_1         ((uint32_t)0x00000006) /*!< 1 bit  for pre-emption priority,

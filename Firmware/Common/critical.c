@@ -19,7 +19,7 @@ static uint32_t critical_section_counter = 0;
 /* Functions -----------------------------------------------------------------*/
 
 /* Begin of critical section */
-void critical_enter(void)
+void critical_enter()
 {
     __disable_irq();
     critical_section_counter++;
@@ -27,7 +27,7 @@ void critical_enter(void)
 
 
 /* End of critical section */
-void critical_exit(void)
+void critical_exit()
 {
     critical_section_counter--;
     if (critical_section_counter <= 0)

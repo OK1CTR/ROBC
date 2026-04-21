@@ -46,7 +46,7 @@ extern void _flush();
 
 #endif  /* CONSOLE_SERIAL_1 */
 
-/* Functions ----------------------------------------------------------------*/
+/* Functions -----------------------------------------------------------------*/
 
 /**
  * @brief Initialize the serial interface and data buffer

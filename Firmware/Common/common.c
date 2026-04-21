@@ -10,8 +10,25 @@
 
 /* Includes ------------------------------------------------------------------*/
 
+#include <common.h>
+#include <main.h>
+
+/* Functions -----------------------------------------------------------------*/
+
+/* Make short delay based on loop cycles */
+void cycle_delay(uint32_t us)
+{
+    const uint32_t cycles = SystemCoreClock / 1000000 * us / 4;
+
+    for (uint32_t i = 0; i < cycles; i++)
+    {
+        __NOP();
+    }
+}
+
+
 /* Standard error handler */
-void Error_Handler(void)
+void error_handler(void)
 {
     __disable_irq();
     while (1)
@@ -22,7 +39,7 @@ void Error_Handler(void)
 
 
 /* Extended error handler*/
-void Error_Handler_ex(char *file, int line)
+void error_handler_ex(char *file, int line)
 {
     __disable_irq();
     while (1)

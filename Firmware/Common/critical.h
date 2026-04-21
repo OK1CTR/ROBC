@@ -16,12 +16,12 @@
 /**
  * @brief Begin of critical section
  */
-extern void critical_enter(void);
+extern void critical_enter();
 
 /**
  * @brief End of critical section
  */
-extern void critical_exit(void);
+extern void critical_exit();
 
 /* ---------------------------------------------------------------------------*/
 
