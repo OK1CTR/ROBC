@@ -21,35 +21,43 @@ void spi1_init()
     LL_SPI_InitTypeDef SPI_InitStruct = {0};
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
 
+    // TODO Move this macro to the BSP
     LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
+    // TODO Move this macro to the BSP
+    LL_GPIO_AF_EnableRemap_SPI1();
 
-    // SCK, MOSI
-    GPIO_InitStruct.Pin = MSCK_Pin | MMOSI_Pin;
+    // SCK
+    GPIO_InitStruct.Pin = MSCK_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
     GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    LL_GPIO_Init(MSCK_GPIO_Port, &GPIO_InitStruct);
+
+    // MOSI
+    // TODO Errata - MOSI cannot be used on PB5 while I2C1 is enabled!
+    GPIO_InitStruct.Pin = MMOSI_Pin;
+    LL_GPIO_Init(MMOSI_GPIO_Port, &GPIO_InitStruct);
 
     // MISO
     GPIO_InitStruct.Pin = MMISO_Pin;
     GPIO_InitStruct.Mode = LL_GPIO_MODE_FLOATING;
     LL_GPIO_Init(MMISO_GPIO_Port, &GPIO_InitStruct);
 
-    LL_GPIO_AF_EnableRemap_SPI1();
-
     // SPI1 parameter configuration
     // TODO Move constants to the BSP
+    LL_SPI_Disable(SPI1);
     SPI_InitStruct.TransferDirection = LL_SPI_FULL_DUPLEX;
     SPI_InitStruct.Mode = LL_SPI_MODE_MASTER;
     SPI_InitStruct.DataWidth = LL_SPI_DATAWIDTH_8BIT;
     SPI_InitStruct.ClockPolarity = LL_SPI_POLARITY_LOW;
     SPI_InitStruct.ClockPhase = LL_SPI_PHASE_1EDGE;
-    SPI_InitStruct.NSS = LL_SPI_NSS_HARD_INPUT;
-    SPI_InitStruct.BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV2;
+    SPI_InitStruct.NSS = LL_SPI_NSS_SOFT;
+    SPI_InitStruct.BaudRate = LL_SPI_BAUDRATEPRESCALER_DIV16;  // 1.5 MHz SCK
     SPI_InitStruct.BitOrder = LL_SPI_MSB_FIRST;
     SPI_InitStruct.CRCCalculation = LL_SPI_CRCCALCULATION_DISABLE;
     SPI_InitStruct.CRCPoly = 10;
     LL_SPI_Init(SPI1, &SPI_InitStruct);
+    LL_SPI_Enable(SPI1);
 }
 
 

@@ -54,6 +54,7 @@ void spi_emu_init()
 
 
 /* Emulated SPI transfer of 8 bits */
+// @note 150 kHz SCK on 24 MHz system clock
 uint8_t spi_emu_trx8(uint8_t data_tx)
 {
     uint32_t i, n;
@@ -71,7 +72,7 @@ uint8_t spi_emu_trx8(uint8_t data_tx)
             set_mosi_L();
         }
 
-        cycle_delay(5);
+        delay_loop(1);
 
         // receive bit
         if (get_miso())
@@ -81,9 +82,9 @@ uint8_t spi_emu_trx8(uint8_t data_tx)
 
         // clock pulse
         set_sck_H();
-        cycle_delay(5);
+        delay_loop(1);
         set_sck_L();
-        cycle_delay(5);
+        delay_loop(1);
     }
 
     return data_rx;

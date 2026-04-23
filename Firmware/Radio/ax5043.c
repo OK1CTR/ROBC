@@ -156,15 +156,14 @@ static rcfg_fm_t rcfg_fm_ram;
 static rcfg_afsk_t rcfg_afsk_ram;
 /*! Radio configuration in RAM - GMSK transmitter dividers and shaping constant */
 static gmsk_cfg_t gmsk_cfg_ram;
-/*! State of the AX5043 packet receiver*/
-static volatile ax_rx_state_e ax_rx_st = ax_rx_wait;
 
-/* Exported variables --------------------------------------------------------*/
-
+/*! AX5043 startup status */
+ax_startup_t ax_startup = {0};
 /*! Last status word of the AX5043 radio */
 uint16_t ax_status = 0;
-/*! AX5043 startup status */
-uint32_t ax_startup = 0;
+
+/*! State of the AX5043 packet receiver */
+static volatile ax_rx_state_e ax_rx_st = ax_rx_wait;
 
 /* Private macros ------------------------------------------------------------*/
 
@@ -213,7 +212,6 @@ void ax_init(void)
 {
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
     LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
-    uint32_t n;
 
     // SEL
     LL_GPIO_SetOutputPin(RSEL_GPIO_Port, RSEL_Pin);
@@ -225,23 +223,19 @@ void ax_init(void)
 
     // AX5043 reset
     ax_rw_2(1, 0x02, 0xE0);
-    for (n = 0; n < 255; n++) __NOP();
+    for (uint32_t i = 0; i < 255; i++) __NOP();
     ax_rw_2(1, 0x02, 0x60);  // 0x04 or 0x60 for external XO?
-    for (n = 0; n < 255; n++) __NOP();
+    for (uint32_t i = 0; i < 255; i++) __NOP();
 
     // Ax5043 register read and write test
-    n = 1;
-    if (ax_rw_3(0, 0x00, 0x00) == 0x51) ax_startup |= n;
-    n <<= 1;
-    if (ax_rw_3(0, 0x01, 0x00) == 0xC5) ax_startup |= n;
-    n <<= 1;
+    if (ax_rw_3(0, 0x00, 0x00) == 0x51) ax_startup.revision = 1;
+    if (ax_rw_3(0, 0x01, 0x00) == 0xC5) ax_startup.scratchpad = 1;
     ax_rw_2(1, 0x01, 0xAA);
-    if (ax_rw_3(0, 0x01, 0x00) == 0xAA) ax_startup |= n;
-    n <<= 1;
+    if (ax_rw_3(0, 0x01, 0x00) == 0xAA) ax_startup.write_test = 1;
     ax_rw_3(1, 0x164, 0x06);  // single ended transmitter
     ax_rw_2(1, 0x26, 0x06);  // PWRAMP pin inverted PA control
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
-    ax_startup |= ax_rw_2(0, 0x03, 0x00) << 8;  // power status register read
+    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);  // power status register read
 
     // performance tuning registers initialization
     ax_rw_3(1, 0xF00, rcfg_ptrg_ram.reg_F00);
@@ -368,7 +362,7 @@ void ax_frequency(ax_vfo_e vfo, uint32_t frq, uint8_t vcoran)
     }
 
     // save VCO & PLL status
-    ax_startup |= x << 16;
+    ax_startup.pll_ranging = x;
 }
 
 
@@ -426,7 +420,7 @@ void ax_mode_fm(void)
     ax_rw_2(1, 0x23, 0x04);  // pinfuncdata, undocumented code to switch TX on permanently
     ax_pwrmode(ax_pwrmode_tx);
     ax_rw_2(1, 0x27, 0x01);  // PWRAMP - PA on
-    ax_startup |= ax_rw_2(0, 0x03, 0x00) << 8;  // power status
+    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
 }
 
 
@@ -444,7 +438,7 @@ void ax_mode_askw(void)
     ax_rw_2(1, 0x23, 0x04);  // pinfuncdata, wire mode?
     ax_rw_2(1, 0x22, 0x05);  // pinfuncdata, wire mode?
     ax_rw_3(1, 0x164, 0x02);  // Single ended transmitter, no amplitude shaping
-    ax_startup |= ax_rw_2(0, 0x03, 0x00) << 8;  // power status
+    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
 }
 
 
@@ -470,7 +464,7 @@ void ax_mode_afsk(uint8_t crc_mode)
     ax_rw_3(1, 0x113, rcfg_afsk_ram.reg_mark0);  // afskmark0
     ax_rw_3(1, 0x164, 0x06); // single ended transmitter, amplitude shaping
     // FM deviation 3 or 5 kHz peak? Where to set?
-    ax_startup |= ax_rw_2(0, 0x03, 0x00) << 8;  // power status
+    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
 }
 
 
@@ -677,7 +671,27 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
     ax_rw_2(1, 0x07, 0x01);  // FIFO not empty
     ax_rw_2(1, 0x09, 0x04);  // RADIOEVENTMASK
 
-    ax_startup |= ax_rw_2(0, 0x03, 0x00) << 8;  // power status
+    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+}
+
+
+/* Get the last AC5043 startup status */
+ax_startup_t ax_get_startup_status()
+{
+    return ax_startup;
+}
+
+
+/* Get the last AC5043 status */
+uint16_t ax_get_status()
+{
+    return ax_status;
+}
+
+/* Get the last AC5043 packet receiver status */
+ax_rx_state_e ax_get_rx_state()
+{
+    return ax_rx_st;
 }
 
 /* Private functions ---------------------------------------------------------*/

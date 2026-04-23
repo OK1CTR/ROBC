@@ -12,6 +12,7 @@
 
 #include <main.h>
 #include <systick.h>
+#include <critical.h>
 #include <rtc.h>
 #include <serial.h>
 #include <stm32f100_msp.h>
@@ -21,6 +22,7 @@
 #include <watchdog.h>
 #include <ax5043.h>
 #include <radio.h>
+#include <spi_emu.h>
 
 /* Definitions ---------------------------------------------------------------*/
 
@@ -46,6 +48,7 @@ int main(void)
     serial_init();
     i2c_init();
     flag_init();
+    spi_emu_init();
     ax_init();
     radio_init();
 

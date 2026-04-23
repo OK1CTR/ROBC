@@ -99,7 +99,7 @@ typedef int16_t Status_t;
  * @brief Make short delay based on loop cycles
  * @param us Number of microseconds
  */
-extern void cycle_delay(uint32_t us);
+extern void delay_loop(uint32_t us);
 
 /**
  * @brief Standard error handler

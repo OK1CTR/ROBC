@@ -16,9 +16,9 @@
 /* Functions -----------------------------------------------------------------*/
 
 /* Make short delay based on loop cycles */
-void cycle_delay(uint32_t us)
+void delay_loop(uint32_t us)
 {
-    const uint32_t cycles = SystemCoreClock / 1000000 * us / 4;
+    const uint32_t cycles = SystemCoreClock * us / 5000000;
 
     for (uint32_t i = 0; i < cycles; i++)
     {

@@ -30,10 +30,10 @@ typedef enum
 /*! AX5043 power mode */
 typedef enum
 {
-    ax_pwrmode_tx = 0x0D,
-    ax_pwrmode_rx = 0x09,
-    ax_pwrmode_tx_synt = 0x0C,
-    ax_pwrmode_rx_synt = 0x08
+    ax_pwrmode_tx = 0x0D,       ///< TX mode
+    ax_pwrmode_rx = 0x09,       ///< RX mode
+    ax_pwrmode_tx_synt = 0x0C,  ///< TX mode, synthesizer only
+    ax_pwrmode_rx_synt = 0x08   ///< RX mode, synthesizer only
 } ax_pwrmode_e;
 
 /*! AX5043 FIFO commands */
@@ -78,22 +78,17 @@ typedef enum
     ax_rx_error = 2  ///< packet overrun error
 } ax_rx_state_e;
 
-/* Exported variables --------------------------------------------------------*/
-
-/*! Last status word of the AX5043 radio */
-extern uint16_t ax_status;
-
-/*! \brief AX5043 startup status
- *  \note bit0 - AX5043 Signature byte is 0x51.
- *  \note bit1 - AX5043 Default scratchpad byte is 0xC5.
- *  \note bit2 - AX5043 Number 0xAA written in AX5043 scratchpad and read back.
- *  \note bit 8..15 - Power status register after basic AX5043 startup.
- *  \note bit 16..23 - Status of the last VCO autoranging.
- */
-extern uint32_t ax_startup;
-
-/*! State of the AX5043 packet tracnsceiver */
-extern volatile uint8_t ax_trx_st;
+/*! AX5043 startup status */
+typedef struct
+{
+    uint32_t revision:1;      ///< silicon revision - should be 0x51
+    uint32_t scratchpad:1;    ///< default scratchpad content should be 0xC5
+    uint32_t write_test:1;    ///< scratchpad write and readback test result
+    uint32_t res1:5;
+    uint32_t power_status:8;  ///< power status register
+    uint32_t pll_ranging:8;   ///< status of the last VCO autoranging.
+    uint32_t res2:8;
+} ax_startup_t;
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -174,6 +169,24 @@ extern void ax_mode_afsk(uint8_t crc_mode);
  * @note The ax_status and the power status is updated.
  */
 extern void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding);
+
+/**
+ * @brief Get the last AC5043 startup status
+ * @return Actual power status
+ */
+extern ax_startup_t ax_get_startup_status();
+
+/**
+ * @brief Get the last AC5043 status
+ * @return Actual status
+ */
+extern uint16_t ax_get_status();
+
+/**
+ * @brief Get the last AC5043 packet receiver status
+ * @return Actual state
+ */
+extern ax_rx_state_e ax_get_rx_state();
 
 /* ---------------------------------------------------------------------------*/
 
