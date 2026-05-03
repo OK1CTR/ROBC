@@ -128,6 +128,12 @@ extern void ax_frequency(ax_vfo_e vfo, uint32_t frq, uint8_t vcoran);
 extern void ax_vfo(ax_vfo_e vfo);
 
 /**
+ * @brief Set the AX5043 transmission rate
+ * @param reate Setting for TXRATE registers
+ */
+extern void ax_txrate(uint32_t rate);
+
+/**
  * @brief Reset and setup the AX5043 FIFO
  */
 extern void ax_fifo_init(void);
@@ -151,9 +157,10 @@ extern void ax_mode_fm(void);
 
 /**
  * @brief Sets the AX5043 radio as wire mode ASK transmitter
+ * @param reate Setting for TXRATE registers
  * @note The ax_status and the power status is updated.
  */
-extern void ax_mode_askw(void);
+extern void ax_mode_ask_wire(uint32_t rate);
 
 /**
  * @brief Sets the AX5043 radio as AFSK FIFO transceiver
@@ -169,6 +176,12 @@ extern void ax_mode_afsk(uint8_t crc_mode);
  * @note The ax_status and the power status is updated.
  */
 extern void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding);
+
+/**
+ * @brief Control the transmitter PA
+ * @param on Set PA on if true, off if false
+ */
+extern void ax_set_power_amp(bool on);
 
 /**
  * @brief Get the last AC5043 startup status

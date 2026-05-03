@@ -99,7 +99,8 @@ typedef struct
 /* Private constants ---------------------------------------------------------*/
 
 /*! Radio configuration constants - Performance Tuning Registers */
-rcfg_ptrg_t ptrg_init ={
+rcfg_ptrg_t ptrg_init =
+{
         .reg_F00 = 0x0F,
         .reg_F0C = 0x00,
         .reg_F0D = 0x03,
@@ -119,14 +120,16 @@ rcfg_ptrg_t ptrg_init ={
 };
 
 /*! Radio configuration constants - FM transmitter deviation */
-rcfg_fm_t fm_init = {
+rcfg_fm_t fm_init =
+{
         .reg_dev0 = 0x04,
         .reg_dev1 = 0xC0,
         .reg_dev2 = 0x00
 };
 
 /*! Radio configuration constants - AFSK transmitter data rate and tone settings */
-rcfg_afsk_t afsk_init = {
+rcfg_afsk_t afsk_init =
+{
         .reg_rate0 = 0xCF,
         .reg_rate1 = 0x04,
         .reg_rate2 = 0x00,
@@ -137,7 +140,8 @@ rcfg_afsk_t afsk_init = {
 };
 
 /*! Radio configuration constants - GMSK transmitter dividers and shaping constant */
-gmsk_cfg_t gmsk_cfg_init = {
+gmsk_cfg_t gmsk_cfg_init =
+{
         .gmsk_cfg_1200 = 0x04CE,
         .gmsk_cfg_2400 = 0x099C,
         .gmsk_cfg_4800 = 0x1338,
@@ -373,6 +377,17 @@ void ax_vfo(ax_vfo_e vfo)
 }
 
 
+/* Set the AX5043 transmission rate */
+void ax_txrate(uint32_t txrate)
+{
+    ax_rw_3(1, 0x167, txrate & 0xFF);  // TXRATE0
+    txrate >>= 8;
+    ax_rw_3(1, 0x166, txrate & 0xFF);  // TXRATE1
+    txrate >>= 8;
+    ax_rw_3(1, 0x165, txrate & 0xFF);  // TXRATE2
+}
+
+
 /* Reset and setup the AX5043 FIFO */
 void ax_fifo_init(void)
 {
@@ -425,15 +440,12 @@ void ax_mode_fm(void)
 
 
 /* Sets the AX5043 radio as wire mode ASK transmitter */
-void ax_mode_askw(void)
+void ax_mode_ask_wire(uint32_t rate)
 {
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x00);  // ASK
     ax_rw_2(1, 0x11, 0x00);  // No differential encoding
-    ax_rw_3(1, 0x165, 0x00);  // txrate2
-    ax_rw_3(1, 0x166, 0x00);  // txrate1
-    ax_rw_3(1, 0x167, 0x00);  // txrate0
-    //ax_rw_3(1, 0x167, 0x11);  // rxrate0 => DEFINEd in morse.h, used in morse_init
+    ax_txrate(rate);
     // TXRATE = (WPM * 2^24) / (2.4 * fxtal)
     ax_rw_2(1, 0x23, 0x04);  // pinfuncdata, wire mode?
     ax_rw_2(1, 0x22, 0x05);  // pinfuncdata, wire mode?
@@ -502,9 +514,7 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
 
     ax_rw_2(1, 0x12, 0x04 | (crc_mode & 0x07) << 4);  // HDLC framing, CRC mode
     // TXRATE = (bitrate / fxtal * 2^24) -> put 1200 Bd
-    ax_rw_3(1, 0x167, txrate & 0xFF);  // TXRATE0
-    ax_rw_3(1, 0x166, (txrate >> 8) & 0xFF);  // TXRATE1
-    ax_rw_3(1, 0x165, 0);  // TXRATE2
+    ax_txrate(txrate);
     // FSK deviation, don't set automatically
     txrate >>= 3; txrate++;  // from the AX config tool
     ax_rw_3(1, 0x163, txrate & 0xFF);  // FSKDEV0
@@ -672,6 +682,13 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
     ax_rw_2(1, 0x09, 0x04);  // RADIOEVENTMASK
 
     ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+}
+
+
+/* Control the transmitter PA */
+void ax_set_power_amp(bool on)
+{
+    ax_rw_2(1, 0x27, (on) ? 0x01 : 0x00);
 }
 
 
