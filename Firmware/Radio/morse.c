@@ -322,9 +322,9 @@ void morse_job(void)
 
 
 /* Store new telegram message to transmit buffer and start sending */
-uint8_t morse_send(uint8_t *telegram)
+uint32_t morse_send(char *telegram)
 {
-    uint8_t *c = telegram;
+    uint8_t *c = (uint8_t*)telegram;
     uint8_t ret = 0;
 
     mc.flags.pa_active = 1;

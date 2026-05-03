@@ -40,7 +40,7 @@ extern void morse_job(void);
  * @param telegram New telegram text
  * @return Number of characters placed into buffer
  */
-extern uint8_t morse_send(uint8_t *telegram);
+extern uint32_t morse_send(char *telegram);
 
 /**
  * @brief Return true if Morse transmission is still in progress
