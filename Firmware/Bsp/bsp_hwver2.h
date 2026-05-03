@@ -122,6 +122,12 @@
 
 #define RDCL_Pin                     LL_GPIO_PIN_13
 #define RDCL_GPIO_Port               GPIOB
+#define RDCL_GPIO_AF_EXTI_Port       LL_GPIO_AF_EXTI_PORTB
+#define RCDL_GPIO_AF_EXTI_Line       LL_GPIO_AF_EXTI_LINE13
+#define RDCL_EXTI_Line               LL_EXTI_LINE_13
+#define RDCLn                        EXTI15_10_IRQn
+#define RDCLHandler                  EXTI15_10_IRQHandler
+
 #define RDDA_Pin                     LL_GPIO_PIN_14
 #define RDDA_GPIO_Port               GPIOB
 
