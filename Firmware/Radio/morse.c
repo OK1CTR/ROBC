@@ -24,7 +24,7 @@
 /*! Dot */
 #define DOT                              1
 /*! Dash */
-#define DASH                     (3 * DOT)
+#define DASH                     (5 * DOT)
 /*! Space between characters */
 #define DASH_SP                  (5 * DOT)
 /*! Space between words */

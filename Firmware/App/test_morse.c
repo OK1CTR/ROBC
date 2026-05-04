@@ -32,7 +32,10 @@
  */
 void app_init()
 {
+    radio_init();
+    ax_pwrmode(ax_pwrmode_tx_synt);
     morse_init(MORSE_RATE_WPM);
+    ax_pwrmode(ax_pwrmode_tx);
 }
 
 

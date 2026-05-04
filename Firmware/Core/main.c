@@ -28,8 +28,6 @@ int main(void)
     i2c_init();
     flag_init();
     spi_emu_init();
-    ax_init();
-    radio_init();
 
     // application related settings
     app_init();

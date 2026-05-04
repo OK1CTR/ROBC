@@ -12,6 +12,12 @@
 
 #include <radio.h>
 #include <main.h>
+#include <ax5043.h>
+
+/* Private defines -----------------------------------------------------------*/
+
+/*! Carrier frequency in Hz */
+#define CARRIER_FREQUENCY                435000000
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -32,6 +38,10 @@ void radio_init()
     LL_GPIO_SetOutputPin(LOW_GPIO_Port, LOW_Pin);  // LOW = 1 (Power high)
     GPIO_InitStruct.Pin = LOW_Pin;
     LL_GPIO_Init(LOW_GPIO_Port, &GPIO_InitStruct);
+
+    ax_config_default();
+    ax_init();
+    ax_frequency(ax_vfo_a, CARRIER_FREQUENCY, 1);
 }
 
 /* ---------------------------------------------------------------------------*/
