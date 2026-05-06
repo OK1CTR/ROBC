@@ -78,6 +78,31 @@ typedef enum
     ax_rx_error = 2  ///< packet overrun error
 } ax_rx_state_e;
 
+/*! AX5043 radio status */
+typedef union
+{
+    uint16_t value;
+    struct
+    {
+        uint16_t res:1;  ///< reserved
+        uint16_t gpadc_irq:1;  ///< GPADC interrupt pending
+        uint16_t lposc_irq:1;  ///< KPOSC interrupt pending
+        uint16_t wakeup_irq:1;  ///< wake-up interrupt pending
+        uint16_t xtal:1;  ///< XTAL oscillator running flag
+        uint16_t event:1;  ///< radio event pending
+        uint16_t power:1;  ///< power interrupt pending
+        uint16_t pwrgood:1;  ///< powergood (not brownout) flag
+        uint16_t fifo_empty:1;  ///< FIFO empty flag
+        uint16_t fifo_full:1;  ///< FIFO full flag
+        uint16_t thr_count:1;  ///< threshold count (FIFO count > FIFO threshold)
+        uint16_t thr_free:1;  ///< threshold free (FIFO free > FIFO threshold)
+        uint16_t fifo_under:1;  ///< FIFO under flag
+        uint16_t fifo_over:1;  ///< FIFO over flag
+        uint16_t pll_lock:1;  ///< PLL lock flag
+        uint16_t one:1;  ///< reserved
+    };
+} ax_status_t;
+
 /*! AX5043 startup status */
 typedef struct
 {
@@ -178,6 +203,14 @@ extern void ax_mode_afsk(uint8_t crc_mode);
 extern void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding);
 
 /**
+ * @brief Write given number of bytes into the transmit FIFO
+ * @param data Data source buffer
+ * @param length Data lenght
+ * @param commit If true, data are commited
+ */
+extern void ax_fifo_write(uint8_t *data, uint8_t length, bool commit);
+
+/**
  * @brief Control the transmitter PA
  * @param on Set PA on if true, off if false
  */
@@ -193,7 +226,7 @@ extern ax_startup_t ax_get_startup_status();
  * @brief Get the last AC5043 status
  * @return Actual status
  */
-extern uint16_t ax_get_status();
+extern ax_status_t ax_get_status();
 
 /**
  * @brief Get the last AC5043 packet receiver status

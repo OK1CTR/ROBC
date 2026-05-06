@@ -18,10 +18,7 @@
 /* Private defines -----------------------------------------------------------*/
 
 //! Safe threshold for chunk write to FIFO (The same maximal length of chunk must be kept.)
-#define FIFO_FREE_THRESHOLD                    20
-
-/*! AN5043 status word flags */
-#define AX_ST_FIFOTHRFREE                 0x0800
+#define FIFO_FREE_THRESHOLD                 20
 
 /*! AX5043 FIFO packet start flag */
 #define AX_PACKET_START                   0x01
@@ -162,9 +159,9 @@ static rcfg_afsk_t rcfg_afsk_ram;
 static gmsk_cfg_t gmsk_cfg_ram;
 
 /*! AX5043 startup status */
-ax_startup_t ax_startup = {0};
+static ax_startup_t ax_startup = {0};
 /*! Last status word of the AX5043 radio */
-uint16_t ax_status = 0;
+static ax_status_t ax_status = {0};
 
 /*! State of the AX5043 packet receiver */
 static volatile ax_rx_state_e ax_rx_st = ax_rx_wait;
@@ -212,7 +209,7 @@ static void ax_rw_N(uint8_t write, uint8_t adr, uint8_t *data, uint16_t num);
 /* Functions -----------------------------------------------------------------*/
 
 /* Default AX5043 configuration */
-void ax_init(void)
+void ax_init(void)  // TODO add mode_set check
 {
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
     LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
@@ -352,7 +349,7 @@ void ax_frequency(ax_vfo_e vfo, uint32_t frq, uint8_t vcoran)
     if (vcoran)
     {
         ax_rw_2(1, 0x33, 0x10);
-        while ((x = ax_rw_2(0, 0x33, 0x00)) & 0x10)
+        while ((x = ax_rw_2(0, 0x33, 0x00)) & 0x10)  // TODO add timeout
         {
         }
     }
@@ -360,7 +357,7 @@ void ax_frequency(ax_vfo_e vfo, uint32_t frq, uint8_t vcoran)
     {
         // no autoranging, PLL lock test only
         // should be handled with a timeout!!! (If it fails, use autoranging again.)
-        while ((x = ax_rw_2(0, 0x33, 0x00)) & 0x40)
+        while ((x = ax_rw_2(0, 0x33, 0x00)) & 0x40)  // TODO add timeout
         {
         }
     }
@@ -685,6 +682,23 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
 }
 
 
+/* Write given number of bytes into the transmit FIFO */
+void ax_fifo_write(uint8_t *data, uint8_t length, bool commit)
+{
+    while (!(ax_status.thr_free)) // read FIFO_FREE_0 TODO add timeout
+    {
+        ax_rw_2(0, 0x2D, 0);
+    }
+
+    ax_rw_N(1, 0x29, data, length);
+
+    if (commit)
+    {
+        ax_rw_2(1, 0x28, ax_fifo_cmd_commit);
+    }
+}
+
+
 /* Control the transmitter PA */
 void ax_set_power_amp(bool on)
 {
@@ -700,7 +714,7 @@ ax_startup_t ax_get_startup_status()
 
 
 /* Get the last AC5043 status */
-uint16_t ax_get_status()
+ax_status_t ax_get_status()
 {
     return ax_status;
 }
@@ -724,8 +738,8 @@ static uint8_t ax_rw_2(uint8_t write, uint8_t adr, uint8_t data)
     // octet 1
     a = rspi_trx8(((write) ? 0x80 : 0) | (adr & 0x7F));
     //ax_status &= 0x7F00; TEST !!!!
-    ax_status &= 0x00FF;
-    ax_status |= (((uint16_t) a) << 8) & 0x7F00;
+    ax_status.value &= 0x00FF;
+    ax_status.value |= (((uint16_t) a) << 8) & 0x7F00;
 
     // octet 2
     a = rspi_trx8((write) ? data : 0);
@@ -733,7 +747,7 @@ static uint8_t ax_rw_2(uint8_t write, uint8_t adr, uint8_t data)
     ax_sel_H();
     critical_exit();
 
-    return(a);
+    return a;
 }
 
 
@@ -747,11 +761,11 @@ static uint8_t ax_rw_3(uint8_t write, uint16_t adr, uint8_t data)
 
     // octet 1
     a = rspi_trx8(((write) ? 0x80 : 0) | 0x70 | ((adr >> 8) & 0x0F));
-    ax_status = (((uint16_t) a) << 8) & 0x7F00;
+    ax_status.value = (((uint16_t) a) << 8) & 0x7F00;
 
     // octet 1
     a = rspi_trx8(adr & 0xFF);
-    ax_status |= a;
+    ax_status.value |= a;
 
     // octet 3
     a = rspi_trx8((write) ? data : 0);
@@ -759,7 +773,7 @@ static uint8_t ax_rw_3(uint8_t write, uint16_t adr, uint8_t data)
     ax_sel_H();
     critical_exit();
 
-    return(a);
+    return a;
 }
 
 
@@ -774,8 +788,8 @@ static void ax_rw_N(uint8_t write, uint8_t adr, uint8_t *data, uint16_t num)
     // octet 1
     a = rspi_trx8(((write) ? 0x80 : 0) | (adr & 0x7F));
     //ax_status &= 0x7F00; TEST !!!!
-    ax_status &= 0x00FF;
-    ax_status |= (((uint16_t) a) << 8) & 0x7F00;
+    ax_status.value &= 0x00FF;
+    ax_status.value |= (((uint16_t) a) << 8) & 0x7F00;
 
     // octet 2..N
     for (i = 0; i < num; i++)

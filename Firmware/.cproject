@@ -91,7 +91,7 @@
 						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Common"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Core"/>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="Drivers"/>
-						<entry excluding="ax25.c" flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Radio"/>
+						<entry flags="VALUE_WORKSPACE_PATH" kind="sourcePath" name="Radio"/>
 					</sourceEntries>
 				</configuration>
 			</storageModule>
