@@ -1,19 +1,19 @@
-/*!
- * \addtogroup Ax25 AX.25
- * \brief Ham radio AX.25 telemetry message transmitter
+/**
+ * @file       ax25.h
+ * @author     OK1CTR
+ * @date       Feb 2026
+ * @brief      AX.25 and HDLC protocol module
+ *
+ * @addtogroup grAx25
  * @{
- */
- 
-/*!
- * \file    ax25.h
- * \brief   Ham radio AX.25 telemetry message transmitter, header
- * \author  OK1CTR
- * \version 1.0
- * \date    12.09.2018
  */
 
 #ifndef _AX25_H_
 #define _AX25_H_
+
+/* Includes ------------------------------------------------------------------*/
+
+#include <stdint.h>
 
 
 //! AX.25 Flag pattern (0x7E)
@@ -54,30 +54,26 @@ The problem might be caused by a too tight AFC. With AFC range 1 kHz is preamble
 //! The position in packet serie - last packet
 #define SER_POS_N          2
 
+/* Functions -----------------------------------------------------------------*/
 
-/*! \brief Init the AX.25 telemetry transmitter
+/**
+ * @brief Initialize the AX.25 and HDLC transmitter
  */
 extern void ax25_init(void);
 
-/*! \brief Convert a callsign in ASCII to AX.25 format
- *  \param call Callsing to be encoded
- *  \param ssid Station ssid 0 .. 15
- *  \param buf Buffer to store encoded callsign
- *  \param last True, if the callsign is last in the address field
- */
-extern void ax25_enc_call(uint8_t *call, uint8_t ssid, uint8_t *buf, uint8_t last);
-
-/*! \brief CRC-CCITT calculation for AX.25 Frame Check Sequence (FCS)
- *  \detail Init the memory with 0xFFFF. Before sending invert all bits. Send LSB first.
- *  \param c Input data octet
- *  \param f Memory state
- *  \return New memory state
+/**
+ * @brief CRC-CCITT calculation for AX.25 Frame Check Sequence (FCS)
+ * @detail Init the memory with 0xFFFF. Before sending invert all bits. Send LSB first.
+ * @param c Input data octet
+ * @param f Memory state
+ * @return New memory state
  */
 extern uint16_t ax25_crc_calc(uint8_t c, uint16_t f);
 
-/*! \brief Send the TXCTL command into the AX5043 FIFO
- *  \param param The parameter of the TXCTL command
- *  \note Add FIFO timeout !!!
+/**
+ * @brief Send the TXCTL command into the AX5043 FIFO
+ * @param param The parameter of the TXCTL command
+ * @note Add FIFO timeout !!!
  */
 extern void ax25_send_txctl(uint8_t param);
 
@@ -116,6 +112,8 @@ extern void ax25_send_msg(uint8_t *msg, uint8_t length);
  */
 extern void hdlc_send_msg(uint8_t *msg, uint8_t length, uint8_t position);
 
-#endif
+/* ---------------------------------------------------------------------------*/
 
-/*! @} */
+#endif  /* _AX25_H_ */
+
+/** @} */
