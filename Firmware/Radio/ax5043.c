@@ -18,26 +18,21 @@
 /* Private defines -----------------------------------------------------------*/
 
 //! Safe threshold for chunk write to FIFO (The same maximal length of chunk must be kept.)
-#define FIFO_FREE_THRESHOLD                 20
-
-/*! AX5043 FIFO packet start flag */
-#define AX_PACKET_START                   0x01
-/*! AX5043 FIFO packet end flag */
-#define AX_PACKET_END                     0x02
+#define FIFO_FREE_THRESHOLD                       20
 
 /*! AX5043 frame structure - CRC OFF */
-#define AX_CRC_OFF                        0
+#define AX_CRC_OFF                                 0
 /*! AX5043 frame structure - CRC-32 */
-#define AX_CRC_CRC32                      6
+#define AX_CRC_CRC32                               6
 /*! CRC generator initialization word */
 #define AX_CRC_INIT                       0xFFFFFFFF
 
 /*! Encoding disabled */
-#define AX_ENC_DISABLED                   0
+#define AX_ENC_DISABLED                            0
 /*! NRZI code without scrambling */
-#define AX_ENC_NRZI                       0x03
+#define AX_ENC_NRZI                             0x03
 /*! NRZI code with scrambling */
-#define AX_ENC_SCRAMBLER                  0x07
+#define AX_ENC_SCRAMBLER                        0x07
 
 /* Private typedefs ----------------------------------------------------------*/
 
@@ -402,10 +397,23 @@ void ax_fifo_cmd(ax_fifo_cmd_e cmd)
 }
 
 
+/* Send the TXCTRL command into the AX5043 FIFO */
+void ax_fifo_txctrl(ax_txctrl_param_e parameter)
+{
+    uint8_t ch_txctrl[] =
+    {
+        0x3C,  ///< TXCTRL chunk
+        0      ///< parameter
+    };
+
+    ch_txctrl[1] = (uint8_t)parameter;
+    ax_fifo_write(ch_txctrl, 2, true);
+}
+
 /* Initialize the AX5043 CRC generator */
 void ax_crc_init(void)
 {
-    static uint8_t crc_init[] =
+    uint8_t crc_init[] =
     {
         AX_CRC_INIT >> 24,
         (AX_CRC_INIT >> 16) & 0xFF,

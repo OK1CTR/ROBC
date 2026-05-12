@@ -36,20 +36,39 @@ typedef enum
     ax_pwrmode_rx_synt = 0x08   ///< RX mode, synthesizer only
 } ax_pwrmode_e;
 
-/*! AX5043 FIFO commands */
+/*! AX5043 commands given through FIFO */
 typedef enum
 {
-    ax_fifo_cmd_clr_errors = 0x02,      ///< clear overrun and underrun error flags
-    ax_fifo_cmd_clr_data_flags = 0x03,  ///< clear data and flags
-    ax_fifo_cmd_commit = 0x43           ///< commit
+    ax_fifo_cmd_nop = 0,                ///< no operation
+    ax_fifo_cmd_ask = 1,                ///< ASK coherent
+    ax_fifo_cmd_clr_errors = 2,         ///< clear overrun and underrun error flags
+    ax_fifo_cmd_clr_data_flags = 3,     ///< clear data and flags
+    ax_fifo_cmd_commit = 4              ///< commit
 } ax_fifo_cmd_e;
 
-/*! AX5043 TXCTL command */
+/*! AX5043 TXCTRL command parameters */
 typedef enum
 {
-    ax_txctl_cmd_paon = 0x03,  ///< PA ON
-    ax_txctl_cmd_paoff = 0x02  ///< PA OFF
-} ax_txctl_cmd_e;
+    ax_txctrl_paon = 0x03,  ///< PA ON
+    ax_txctrl_paoff = 0x02  ///< PA OFF
+} ax_txctrl_param_e;
+
+/*! AX5043 FIFO flags*/
+typedef union
+{
+    uint8_t value;
+    struct
+    {
+        uint8_t pkt_start:1;
+        uint8_t pkt_end:1;
+        uint8_t residue:1;
+        uint8_t crc_fail:1;
+        uint8_t addr_fail:1;
+        uint8_t size_fail:1;
+        uint8_t abort:1;
+        uint8_t res:1;
+    };
+} ax_fifo_flags_t;
 
 /*! AX5043 G3RUH mode baud rate selection */
 typedef enum
@@ -168,6 +187,12 @@ extern void ax_fifo_init(void);
  * @param cmd Command
  */
 extern void ax_fifo_cmd(ax_fifo_cmd_e cmd);
+
+/**
+ * @brief Send the TXCTRL command into the AX5043 FIFO
+ * @param parameter The parameter of the TXCTRL command
+ */
+void ax_fifo_txctrl(ax_txctrl_param_e parameter);
 
 /**
  * @brief Initialize the AX5043 CRC generator

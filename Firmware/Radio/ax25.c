@@ -89,23 +89,6 @@ uint16_t ax25_crc_calc(uint8_t c, uint16_t f)
 }
 
 
-/*! \brief Send the TXCTL command into the AX5043 FIFO
- *  \param param The parameter of the TXCTL command
- *  \note Add FIFO timeout !!!
- */
-void ax25_send_txctl(uint8_t param)
-{
-    static uint8_t ch_txctl[] =
-    {
-            0x3C, // TXCTL chunk
-            AX_TXCTL_PAOFF, // parameter
-    };
-
-    ch_txctl[1] = param;
-    ax_fifo_write(ch_txctl, 2, true);
-}
-
-
 /* Send HDLC/AX.25/FEC universal flag chunk into the AX5043 FIFO */
 void hdlc_send_flag(uint8_t pattern, uint8_t length, uint8_t parameter)
 {
@@ -180,13 +163,13 @@ void ax25_send_msg(uint8_t *msg, uint8_t length)
         l = length;
     }
 
-    ax_rw_2(1, 0x28, FIFOCMD_CLR_DFL);  // clear FIFO and flags
-	ax25_send_txctl(AX_TXCTL_PAON);  // PA on
+    ax_fifo_cmd(ax_fifo_cmd_clr_data_flags);
+    ax_fifo_txctrl(ax_txctrl_paon);
 	hdlc_send_flag(HDLC_FLAG, AX25_PRE_LEN, AX25_FLAG_PAR);  // send flag (peramble)
-	ax25_send_inf(hdr_ax25.bytes, 16, 0);  // send AX.25 header
+	ax25_send_inf(hdr_ax25.bytes, sizeof(hdr_ax25), 0);  // send AX.25 header
 
 	// calculate header CRC
-	for (i = 0, p = ax25_hdr; i < 16; i++, p++)
+	for (i = 0, p = hdr_ax25.bytes; i < sizeof(hdr_ax25); i++, p++)
 	{
 	    crc = ax25_crc_calc(*p, crc);
 	}
@@ -213,7 +196,7 @@ void ax25_send_msg(uint8_t *msg, uint8_t length)
 	// send CRC and finish the transmission
 	ax25_send_crc(crc);  // send CRC
 	hdlc_send_flag(HDLC_FLAG, AX25_TAIL_LEN, AX25_FLAG_PAR);  // send flag
-	ax25_send_txctl(AX_TXCTL_PAOFF);  // PA off
+	ax_fifo_txctrl(ax_txctrl_paoff);
 }
 
 
@@ -221,6 +204,8 @@ void ax25_send_msg(uint8_t *msg, uint8_t length)
 void hdlc_send_msg(uint8_t *msg, uint8_t length, uint8_t position)
 {
     uint8_t i, l, sg, sgr;
+    ax_fifo_flags_t flag_pkt_start = {.pkt_start = 1};
+    ax_fifo_flags_t flag_pkt_end = {.pkt_end = 1};
 
     // prepare message length
     if (length == 0)
@@ -235,25 +220,25 @@ void hdlc_send_msg(uint8_t *msg, uint8_t length, uint8_t position)
     // beginning of the transmission
     if (position & SER_POS_1)
     {
-        ax_rw_2(1, 0x28, FIFOCMD_CLR_DFL);  // clear FIFO and flags
+        ax_fifo_cmd(ax_fifo_cmd_clr_data_flags);
         ax_crc_init();  // initialize the HW CRC generator
-        ax25_send_txctl(AX_TXCTL_PAON);  // PA on
+        ax_fifo_txctrl(ax_txctrl_paon);
         //hdlc_send_flag(0x00, HDLC_SCRP_LEN, 0x10);  // send AFC preamble
         hdlc_send_flag(HDLC_FLAG, HDLC_SCRP_LEN, AX25_FLAG_PAR);  // send flag (peramble)
     }
     // FIFO anti-freeze delay
-    ax25_send_inf(hdr_hdlc.bytes, 16, AX_PACKET_START);  // send AX.25 header
+    ax25_send_inf(hdr_hdlc.bytes, sizeof(hdr_ax25), flag_pkt_start.value);  // send AX.25 header
     // 16-Byte segmented transmission of the data
     sg = l / 16;
     sgr = l % 16;
     for (i = 0; i < sg; i++)
     {
-        ax25_send_inf(msg + (i << 4), 16, (sgr == 0 && i == sg - 1) ? AX_PACKET_END : 0);
+        ax25_send_inf(msg + (i << 4), 16, (sgr == 0 && i == sg - 1) ? flag_pkt_end.value : 0);
     }
 
     if (sgr)
     {
-        ax25_send_inf(msg + (i << 4), sgr, AX_PACKET_END);
+        ax25_send_inf(msg + (i << 4), sgr, flag_pkt_end.value);
     }
     hdlc_send_flag(HDLC_FLAG, AX25_TAIL_LEN, AX25_FLAG_PAR);  // send final flag
 
@@ -261,7 +246,7 @@ void hdlc_send_msg(uint8_t *msg, uint8_t length, uint8_t position)
     if (position & SER_POS_N)
     {
         // finish the transmission
-        ax25_send_txctl(AX_TXCTL_PAOFF);  // PA off
+        ax_fifo_txctrl(ax_txctrl_paoff);
     }
 }
 
