@@ -48,7 +48,7 @@
 									<listOptionValue builtIn="false" value="STM32F100xB"/>
 									<listOptionValue builtIn="false" value="BSP_HW_VER_2"/>
 									<listOptionValue builtIn="false" value="IWDG_ENABLED=0"/>
-									<listOptionValue builtIn="false" value="APP_MODE=101"/>
+									<listOptionValue builtIn="false" value="APP_MODE=102"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths.1407275819" name="Include paths (-I)" superClass="com.st.stm32cube.ide.mcu.gnu.managedbuild.tool.c.compiler.option.includepaths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="../Drivers/STM32F1xx_HAL_Driver/Inc"/>

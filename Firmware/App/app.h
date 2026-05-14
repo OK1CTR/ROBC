@@ -27,6 +27,7 @@
 #include <spi.h>
 #include <spi_emu.h>
 #include <morse.h>
+#include <ax25.h>
 
 /* Functions -----------------------------------------------------------------*/
 

@@ -460,7 +460,7 @@ void ax_mode_ask_wire(uint32_t rate)
 
 
 /* Sets the AX5043 radio as AFSK FIFO transceiver */
-void ax_mode_afsk(uint8_t crc_mode)
+void ax_mode_afsk(ax_crc_mode_e crc_mode)
 {
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x0A);  // AFSK
@@ -469,7 +469,7 @@ void ax_mode_afsk(uint8_t crc_mode)
     ax_rw_2(1, 0x11, 0x00);  // encoding off for tone debug
     ax_rw_2(1, 0x12, 0x00);  // no framing for RAW data
 #endif
-    ax_rw_2(1, 0x12, 0x04 | (crc_mode & 0x07) << 4);  // HDLC framing, CRC mode
+    ax_rw_2(1, 0x12, 0x04 | ((uint8_t)crc_mode & 0x07) << 4);  // HDLC framing, CRC mode
     // TXRATE = (bitrate / fxtal * 2^24) + 1 -> put 1200 Bd
     ax_rw_3(1, 0x165, rcfg_afsk_ram.reg_rate2);  // txrate2
     ax_rw_3(1, 0x166, rcfg_afsk_ram.reg_rate1);  // txrate1

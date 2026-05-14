@@ -46,6 +46,13 @@ typedef enum
     ax_fifo_cmd_commit = 4              ///< commit
 } ax_fifo_cmd_e;
 
+/*! AX5043 CRC mode */
+typedef enum
+{
+    ax_crc_mode_off = 0,                ///< disable hardware CRC
+    ax_crc_mode_crc32 = 6               ///< hardware CRC32
+} ax_crc_mode_e;
+
 /*! AX5043 TXCTRL command parameters */
 typedef enum
 {
@@ -214,9 +221,10 @@ extern void ax_mode_ask_wire(uint32_t rate);
 
 /**
  * @brief Sets the AX5043 radio as AFSK FIFO transceiver
+ * @param crc_mode Mode of HW CRC unit
  * @note The ax_status and the power status is updated.
  */
-extern void ax_mode_afsk(uint8_t crc_mode);
+extern void ax_mode_afsk(ax_crc_mode_e crc_mode);
 
 /**
  * @brief Sets the AX5043 radio as GMSK G3RUH FIFO transceiver
