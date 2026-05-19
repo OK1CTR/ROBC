@@ -1,14 +1,14 @@
 /**
- * @file       test_afsk.c
+ * @file       test_gmsk.c
  * @author     OK1CTR
  * @date       May 2026
- * @brief      Test of AFSK beacon transmission
+ * @brief      Test of GMSK beacon transmission
  *
  * @addtogroup grApplication
  * @{
  */
 
-#if defined(APP_MODE) && APP_MODE == 102
+#if defined(APP_MODE) && APP_MODE == 103
 
 /* Includes ------------------------------------------------------------------*/
 
@@ -41,7 +41,7 @@ void app_init()
 {
     radio_init();
     ax_pwrmode(ax_pwrmode_tx_synt);
-    ax_mode_afsk(ax_crc_mode_off);
+    ax_mode_g3ruh(ax_g3ruh_rate_9600, ax_crc_mode_off, ax_enc_mode_scramnler);
     ax_pwrmode(ax_pwrmode_tx);
     ax25_init();
     ax_fifo_init();
@@ -61,7 +61,7 @@ extern void app_run()
     uint32_t cnt = 1;
 
     // before start
-    printf("[+] AFSK Packet Radio TX test start\n");
+    printf("[+] G3RUH GMSK Packet Radio TX test start\n");
 
     // periodic tasks
     tick_timer_set(&tmr_run_medium, RUN_PERIOD_MEDIUM);

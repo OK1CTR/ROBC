@@ -12,6 +12,8 @@
 
 #include <common.h>
 #include <main.h>
+#include <stdio.h>
+#include <serial.h>
 
 /* Functions -----------------------------------------------------------------*/
 
@@ -59,7 +61,10 @@ void error_handler_ex(char *file, int line)
  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
-    __NOP();
+    __BKPT(0);
+    while (1)
+    {
+    }
 }
 #endif  /* USE_FULL_ASSERT */
 

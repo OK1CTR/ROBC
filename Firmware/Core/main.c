@@ -31,6 +31,7 @@ int main(void)
 
     // application related settings
     app_init();
+
     // application main body
     app_run();
 }

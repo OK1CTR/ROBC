@@ -151,6 +151,11 @@ void ax25_send_crc(uint16_t crc)
 /* Send AX.25 telemetry message */
 void ax25_send_msg(uint8_t *msg, uint8_t length)
 {
+    if (ax_get_init_state() != ax_init_afsk && ax_get_init_state() != ax_init_g3ruh)
+    {
+        return;
+    }
+
     uint8_t i, l, sg, *p;
     uint16_t crc = 0xFFFF;
 
@@ -203,6 +208,11 @@ void ax25_send_msg(uint8_t *msg, uint8_t length)
 /* Send HDLC ground contact message */
 void hdlc_send_msg(uint8_t *msg, uint8_t length, uint8_t position)
 {
+    if (ax_get_init_state() != ax_init_afsk && ax_get_init_state() != ax_init_g3ruh)
+    {
+        return;
+    }
+
     uint8_t i, l, sg, sgr;
     ax_fifo_flags_t flag_pkt_start = {.pkt_start = 1};
     ax_fifo_flags_t flag_pkt_end = {.pkt_end = 1};

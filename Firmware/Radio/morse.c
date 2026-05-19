@@ -188,7 +188,7 @@ void morse_init(uint32_t wpm)
     LL_GPIO_Init(RDDA_GPIO_Port, &GPIO_InitStruct);
 
     // txrate = (WPM * 2^24) / (2.4 * fxtal)
-    ax_mode_ask_wire((((uint64_t) wpm) * 6990507L) / RXTAL_FREQUENCY);
+    ax_mode_ask_wire((((uint64_t) wpm) * 6990507L) / RXTAL_FREQUENCY);  // TODO recalculate for Tdash = 5 * Tdot
 }
 
 
@@ -204,7 +204,11 @@ void morse_deinit()
 /* Morse keyer regular job */
 void morse_job(void)
 {
-    uint8_t chr;
+    if (ax_get_init_state() != ax_init_askw)
+    {
+        morse_deinit();
+        return;
+    }
 
     if (mc.character_walk == character_walk_free)  // nothing in process
     {
@@ -225,7 +229,7 @@ void morse_job(void)
 
             // pull a character from the transmit buffer
             critical_enter();
-            chr = morse_bf[mc.morse_bf_tail];
+            uint8_t chr = morse_bf[mc.morse_bf_tail];
             mc.morse_bf_tail = (uint32_t)(mc.morse_bf_tail + 1) % MORSE_BFLEN;
             critical_exit();
 
@@ -324,6 +328,11 @@ void morse_job(void)
 /* Store new telegram message to transmit buffer and start sending */
 uint32_t morse_send(char *telegram)
 {
+    if (ax_get_init_state() != ax_init_askw)
+    {
+        return 0;
+    }
+
     uint8_t *c = (uint8_t*)telegram;
     uint8_t ret = 0;
 
@@ -347,7 +356,7 @@ uint32_t morse_send(char *telegram)
         critical_exit();
     }
 
-    return(ret);
+    return ret;
 }
 
 

@@ -18,6 +18,7 @@
 /* RTC initialization */
 extern void rtc_init()
 {
+#if 0
     LL_RTC_InitTypeDef RTC_InitStruct = {0};
 
     LL_PWR_EnableBkUpAccess();
@@ -27,6 +28,7 @@ extern void rtc_init()
     RTC_InitStruct.AsynchPrescaler = 0xFFFFFFFFU;
     LL_RTC_Init(RTC, &RTC_InitStruct);
     LL_RTC_SetAsynchPrescaler(RTC, 0xFFFFFFFFU);
+#endif
 }
 
 /* ---------------------------------------------------------------------------*/

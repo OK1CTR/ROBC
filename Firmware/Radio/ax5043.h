@@ -17,8 +17,20 @@
 #include <stdbool.h>
 #include <common.h>
 
-/* Defines -------------------------------------------------------------------*/
 /* Typedefs ------------------------------------------------------------------*/
+
+/*! Radio initialization state */
+typedef enum
+{
+    ax_init_reset = 0,                   ///< just after reset
+    ax_init_default,                     ///< default parameter sets loaded
+    ax_init_ready,                       ///< basic initialization successful
+    ax_init_frequency,                   ///< frequency was set successfully
+    ax_init_fm,                          ///< configured for FM
+    ax_init_askw,                        ///< configured for ASK Wire mode
+    ax_init_afsk,                        ///< configured for AFSK
+    ax_init_g3ruh                        ///< configured for G3RUH
+} ax_init_state_e;
 
 /*! AX5043 VFO selection */
 typedef enum
@@ -30,34 +42,27 @@ typedef enum
 /*! AX5043 power mode */
 typedef enum
 {
-    ax_pwrmode_tx = 0x0D,       ///< TX mode
-    ax_pwrmode_rx = 0x09,       ///< RX mode
-    ax_pwrmode_tx_synt = 0x0C,  ///< TX mode, synthesizer only
-    ax_pwrmode_rx_synt = 0x08   ///< RX mode, synthesizer only
+    ax_pwrmode_tx = 0x0D,                ///< TX mode
+    ax_pwrmode_rx = 0x09,                ///< RX mode
+    ax_pwrmode_tx_synt = 0x0C,           ///< TX mode, synthesizer only
+    ax_pwrmode_rx_synt = 0x08            ///< RX mode, synthesizer only
 } ax_pwrmode_e;
 
 /*! AX5043 commands given through FIFO */
 typedef enum
 {
-    ax_fifo_cmd_nop = 0,                ///< no operation
-    ax_fifo_cmd_ask = 1,                ///< ASK coherent
-    ax_fifo_cmd_clr_errors = 2,         ///< clear overrun and underrun error flags
-    ax_fifo_cmd_clr_data_flags = 3,     ///< clear data and flags
-    ax_fifo_cmd_commit = 4              ///< commit
+    ax_fifo_cmd_nop = 0,                 ///< no operation
+    ax_fifo_cmd_ask = 1,                 ///< ASK coherent
+    ax_fifo_cmd_clr_errors = 2,          ///< clear overrun and underrun error flags
+    ax_fifo_cmd_clr_data_flags = 3,      ///< clear data and flags
+    ax_fifo_cmd_commit = 4               ///< commit
 } ax_fifo_cmd_e;
-
-/*! AX5043 CRC mode */
-typedef enum
-{
-    ax_crc_mode_off = 0,                ///< disable hardware CRC
-    ax_crc_mode_crc32 = 6               ///< hardware CRC32
-} ax_crc_mode_e;
 
 /*! AX5043 TXCTRL command parameters */
 typedef enum
 {
-    ax_txctrl_paon = 0x03,  ///< PA ON
-    ax_txctrl_paoff = 0x02  ///< PA OFF
+    ax_txctrl_paon = 0x03,               ///< PA ON
+    ax_txctrl_paoff = 0x02               ///< PA OFF
 } ax_txctrl_param_e;
 
 /*! AX5043 FIFO flags*/
@@ -66,13 +71,13 @@ typedef union
     uint8_t value;
     struct
     {
-        uint8_t pkt_start:1;
-        uint8_t pkt_end:1;
-        uint8_t residue:1;
-        uint8_t crc_fail:1;
-        uint8_t addr_fail:1;
-        uint8_t size_fail:1;
-        uint8_t abort:1;
+        uint8_t pkt_start:1;             ///< packet start
+        uint8_t pkt_end:1;               ///< packet end
+        uint8_t residue:1;               ///< residue from non-standard length packet
+        uint8_t crc_fail:1;              ///< CRC check failed
+        uint8_t addr_fail:1;             ///< address check failed
+        uint8_t size_fail:1;             ///< packet size mismatch
+        uint8_t abort:1;                 ///< abort operation mode
         uint8_t res:1;
     };
 } ax_fifo_flags_t;
@@ -88,20 +93,35 @@ typedef enum
     ax_g3ruh_rate_19200,
 } ax_g3ruh_rate_e;
 
+/*! AX5043 CRC mode */
+typedef enum
+{
+    ax_crc_mode_off = 0,                 ///< disable hardware CRC
+    ax_crc_mode_crc32 = 6                ///< hardware CRC32
+} ax_crc_mode_e;
+
+/*! AX5043 encoding mode */
+typedef enum
+{
+    ax_enc_mode_off = 0,                 ///< encoding disabled
+    ax_enc_mode_nrzi = 3,                ///< NRZI code without scrambling
+    ax_enc_mode_scramnler = 7            ///< NRZI code with scrambling
+} ax_enc_mode_e;
+
 /*! AX5043 Gaussian filtering selection */
 typedef enum
 {
-    ax_gauss_0 = 0,   ///< none
-    ax_gauss_3 = 2,   ///< BT = 0.3
-    ax_gauss_5 = 3    ///< BT = 0.6 (better preamble sync)
+    ax_gauss_0 = 0,                      ///< none
+    ax_gauss_3 = 2,                      ///< BT = 0.3
+    ax_gauss_5 = 3                       ///< BT = 0.6 (better preamble sync)
 } ax_gauss_e;
 
 /*! AX5043 receive state */
 typedef enum
 {
-    ax_rx_wait = 0,  ///< packet receiver is waiting for incoming packet over radio
-    ax_rx_data = 1,  ///< new data available in AX5043 buffer
-    ax_rx_error = 2  ///< packet overrun error
+    ax_rx_wait = 0,                      ///< packet receiver is waiting for incoming packet over radio
+    ax_rx_data = 1,                      ///< new data available in AX5043 buffer
+    ax_rx_error = 2                      ///< packet overrun error
 } ax_rx_state_e;
 
 /*! AX5043 radio status */
@@ -110,34 +130,34 @@ typedef union
     uint16_t value;
     struct
     {
-        uint16_t res:1;  ///< reserved
-        uint16_t gpadc_irq:1;  ///< GPADC interrupt pending
-        uint16_t lposc_irq:1;  ///< KPOSC interrupt pending
-        uint16_t wakeup_irq:1;  ///< wake-up interrupt pending
-        uint16_t xtal:1;  ///< XTAL oscillator running flag
-        uint16_t event:1;  ///< radio event pending
-        uint16_t power:1;  ///< power interrupt pending
-        uint16_t pwrgood:1;  ///< powergood (not brownout) flag
-        uint16_t fifo_empty:1;  ///< FIFO empty flag
-        uint16_t fifo_full:1;  ///< FIFO full flag
-        uint16_t thr_count:1;  ///< threshold count (FIFO count > FIFO threshold)
-        uint16_t thr_free:1;  ///< threshold free (FIFO free > FIFO threshold)
-        uint16_t fifo_under:1;  ///< FIFO under flag
-        uint16_t fifo_over:1;  ///< FIFO over flag
-        uint16_t pll_lock:1;  ///< PLL lock flag
-        uint16_t one:1;  ///< reserved
+        uint16_t res:1;                  ///< reserved
+        uint16_t gpadc_irq:1;            ///< GPADC interrupt pending
+        uint16_t lposc_irq:1;            ///< KPOSC interrupt pending
+        uint16_t wakeup_irq:1;           ///< wake-up interrupt pending
+        uint16_t xtal:1;                 ///< XTAL oscillator running flag
+        uint16_t event:1;                ///< radio event pending
+        uint16_t power:1;                ///< power interrupt pending
+        uint16_t pwrgood:1;              ///< powergood (not brownout) flag
+        uint16_t fifo_empty:1;           ///< FIFO empty flag
+        uint16_t fifo_full:1;            ///< FIFO full flag
+        uint16_t thr_count:1;            ///< threshold count (FIFO count > FIFO threshold)
+        uint16_t thr_free:1;             ///< threshold free (FIFO free > FIFO threshold)
+        uint16_t fifo_under:1;           ///< FIFO under flag
+        uint16_t fifo_over:1;            ///< FIFO over flag
+        uint16_t pll_lock:1;             ///< PLL lock flag
+        uint16_t one:1;                  ///< reserved
     };
 } ax_status_t;
 
 /*! AX5043 startup status */
 typedef struct
 {
-    uint32_t revision:1;      ///< silicon revision - should be 0x51
-    uint32_t scratchpad:1;    ///< default scratchpad content should be 0xC5
-    uint32_t write_test:1;    ///< scratchpad write and readback test result
+    uint32_t revision:1;                 ///< silicon revision - should be 0x51
+    uint32_t scratchpad:1;               ///< default scratchpad content should be 0xC5
+    uint32_t write_test:1;               ///< scratchpad write and readback test result
     uint32_t res1:5;
-    uint32_t power_status:8;  ///< power status register
-    uint32_t pll_ranging:8;   ///< status of the last VCO autoranging.
+    uint32_t power_status:8;             ///< power status register
+    uint32_t pll_ranging:8;              ///< status of the last VCO autoranging.
     uint32_t res2:8;
 } ax_startup_t;
 
@@ -266,6 +286,12 @@ extern ax_status_t ax_get_status();
  * @return Actual state
  */
 extern ax_rx_state_e ax_get_rx_state();
+
+/**
+ * @brief Get the actual initialization state of the radio
+ * @return Actual initialization state
+ */
+extern ax_init_state_e ax_get_init_state();
 
 /* ---------------------------------------------------------------------------*/
 

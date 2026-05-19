@@ -69,7 +69,7 @@
 #define RX2_GPIO_Port                GPIOA
 
 #define USART2_USART                 USART2
-#define USART2_CLOCK_EN()            LL_APB2_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2)
+#define USART2_CLOCK_EN()            LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_USART2)
 #define USART2_BAUD_RATE             115200
 #define USART2_IRQ_N                 USART2_IRQn
 #define USART2_IRQ_HANDLER           USART2_IRQHandler

@@ -14,25 +14,14 @@
 #include <main.h>
 #include <critical.h>
 #include <string.h>
+#include <stm32_assert.h>
 
 /* Private defines -----------------------------------------------------------*/
 
 //! Safe threshold for chunk write to FIFO (The same maximal length of chunk must be kept.)
 #define FIFO_FREE_THRESHOLD                       20
-
-/*! AX5043 frame structure - CRC OFF */
-#define AX_CRC_OFF                                 0
-/*! AX5043 frame structure - CRC-32 */
-#define AX_CRC_CRC32                               6
 /*! CRC generator initialization word */
 #define AX_CRC_INIT                       0xFFFFFFFF
-
-/*! Encoding disabled */
-#define AX_ENC_DISABLED                            0
-/*! NRZI code without scrambling */
-#define AX_ENC_NRZI                             0x03
-/*! NRZI code with scrambling */
-#define AX_ENC_SCRAMBLER                        0x07
 
 /* Private typedefs ----------------------------------------------------------*/
 
@@ -157,15 +146,17 @@ static gmsk_cfg_t gmsk_cfg_ram;
 static ax_startup_t ax_startup = {0};
 /*! Last status word of the AX5043 radio */
 static ax_status_t ax_status = {0};
+/*! Radio initialization state */
+static ax_init_state_e ax_init_state = ax_init_reset;
 
 /*! State of the AX5043 packet receiver */
 static volatile ax_rx_state_e ax_rx_st = ax_rx_wait;
 
 /* Private macros ------------------------------------------------------------*/
 
-//! SEL line software control - H
+/*! SEL line software control - H */
 #define ax_sel_H() LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_8)
-//! SEL line software control - L
+/*! SEL line software control - L */
 #define ax_sel_L() LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_8)
 
 /* Private function prototypes -----------------------------------------------*/
@@ -204,8 +195,10 @@ static void ax_rw_N(uint8_t write, uint8_t adr, uint8_t *data, uint16_t num);
 /* Functions -----------------------------------------------------------------*/
 
 /* Default AX5043 configuration */
-void ax_init(void)  // TODO add mode_set check
+void ax_init(void)
 {
+    assert_param(ax_init_state != ax_init_reset);
+
     LL_GPIO_InitTypeDef GPIO_InitStruct = {0};
     LL_EXTI_InitTypeDef EXTI_InitStruct = {0};
 
@@ -219,9 +212,9 @@ void ax_init(void)  // TODO add mode_set check
 
     // AX5043 reset
     ax_rw_2(1, 0x02, 0xE0);
-    for (uint32_t i = 0; i < 255; i++) __NOP();
+    for (uint32_t i = 0; i < 255; i++) __NOP();  // TODO proper delay
     ax_rw_2(1, 0x02, 0x60);  // 0x04 or 0x60 for external XO?
-    for (uint32_t i = 0; i < 255; i++) __NOP();
+    for (uint32_t i = 0; i < 255; i++) __NOP();  // TODO proper delay
 
     // Ax5043 register read and write test
     if (ax_rw_3(0, 0x00, 0x00) == 0x51) ax_startup.revision = 1;
@@ -285,6 +278,8 @@ void ax_init(void)  // TODO add mode_set check
     ax_rw_2(1, 0x22, 0x04);  // DCLK -> modem clock output, more variants!
     ax_rw_2(1, 0x23, 0x07);  // DATA -> modem data output a LOT of variants! (0x07 - raw data, NRZI decoded, no descrabled)
 #endif
+
+    ax_init_state = ax_init_ready;
 }
 
 
@@ -295,7 +290,8 @@ void ax_config_default(void)
     rcfg_fm_ram = fm_init;
     rcfg_afsk_ram = afsk_init;
     gmsk_cfg_ram = gmsk_cfg_init;
-    return;
+
+    ax_init_state = ax_init_default;
 }
 
 
@@ -309,6 +305,8 @@ void ax_pwrmode(ax_pwrmode_e pwrmode)
 /* The AX5043 radio synthesizer frequency setting */
 void ax_frequency(ax_vfo_e vfo, uint32_t frq, uint8_t vcoran)
 {
+    assert_param(ax_init_state > ax_init_default);
+
     uint64_t x;
     uint8_t adr;
 
@@ -359,6 +357,8 @@ void ax_frequency(ax_vfo_e vfo, uint32_t frq, uint8_t vcoran)
 
     // save VCO & PLL status
     ax_startup.pll_ranging = x;
+
+    ax_init_state = ax_init_frequency;
 }
 
 
@@ -428,6 +428,8 @@ void ax_crc_init(void)
 /* Sets the AX5043 radio as continuous FM transmitter */
 void ax_mode_fm(void)
 {
+    assassert_paramert(ax_init_state > ax_init_ready);
+
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x0B);  // FM
 
@@ -441,12 +443,16 @@ void ax_mode_fm(void)
     ax_pwrmode(ax_pwrmode_tx);
     ax_rw_2(1, 0x27, 0x01);  // PWRAMP - PA on
     ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+
+    ax_init_state = ax_init_fm;
 }
 
 
 /* Sets the AX5043 radio as wire mode ASK transmitter */
 void ax_mode_ask_wire(uint32_t rate)
 {
+    assert_param(ax_init_state > ax_init_ready);
+
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x00);  // ASK
     ax_rw_2(1, 0x11, 0x00);  // No differential encoding
@@ -456,12 +462,16 @@ void ax_mode_ask_wire(uint32_t rate)
     ax_rw_2(1, 0x22, 0x05);  // pinfuncdata, wire mode?
     ax_rw_3(1, 0x164, 0x02);  // Single ended transmitter, no amplitude shaping
     ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+
+    ax_init_state = ax_init_askw;
 }
 
 
 /* Sets the AX5043 radio as AFSK FIFO transceiver */
 void ax_mode_afsk(ax_crc_mode_e crc_mode)
 {
+    assert_param(ax_init_state > ax_init_ready);
+
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x0A);  // AFSK
     ax_rw_2(1, 0x11, 0x03);  // encoding, NRZI, scrambler is off
@@ -482,12 +492,16 @@ void ax_mode_afsk(ax_crc_mode_e crc_mode)
     ax_rw_3(1, 0x164, 0x06); // single ended transmitter, amplitude shaping
     // FM deviation 3 or 5 kHz peak? Where to set?
     ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+
+    ax_init_state = ax_init_afsk;
 }
 
 
 /* Sets the AX5043 radio as GMSK G3RUH FIFO transceiver */
 void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
 {
+    assert_param(ax_init_state > ax_init_ready);
+
     uint32_t txrate;
 
     switch (type)
@@ -687,6 +701,8 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
     ax_rw_2(1, 0x09, 0x04);  // RADIOEVENTMASK
 
     ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+
+    ax_init_state = ax_init_g3ruh;
 }
 
 
@@ -731,6 +747,12 @@ ax_status_t ax_get_status()
 ax_rx_state_e ax_get_rx_state()
 {
     return ax_rx_st;
+}
+
+/* Get the actual initialization state of the radio */
+ax_init_state_e ax_get_init_state()
+{
+    return ax_init_state;
 }
 
 /* Private functions ---------------------------------------------------------*/
