@@ -77,6 +77,55 @@ typedef struct
     ax_gauss_e gmsk_cfg_shaping;
 } _PACKED_ gmsk_cfg_t;
 
+/*! AX5043 IRQ flags */
+typedef union
+{
+    uint16_t value;
+    struct
+    {
+        uint8_t lo;
+        uint8_t hi;
+    };
+    struct
+    {
+        uint16_t fifo_not_empty:1;       ///< receive FIFO not empty
+        uint16_t fifo_not_full:1;        ///< FIFO not full
+        uint16_t fifo_thr_cnt:1;         ///< FIFO count > threshold
+        uint16_t fifo_thr_free:1;        ///< FIFO free > threshold
+        uint16_t fifo_error:1;           ///< FIFO error
+        uint16_t pll_unlock:1;           ///< pll lock loss
+        uint16_t radio_ctrl:1;           ///< radio controller
+        uint16_t power:1;                ///< power
+        uint16_t xtal_ready:1;           ///< xtal oscillator ready
+        uint16_t wakeup_timer:1;         ///< wake-up timer
+        uint16_t lp_osc:1;               ///< low power oscillator
+        uint16_t gp_adc:1;               ///< general purpose ADC
+        uint16_t pll_rng_done:1;         ///< PLL ranging done
+        uint16_t res:3;
+    };
+} ax_irq_flags_t;
+
+
+/*! AX5043 radio controller event flags */
+typedef union
+{
+    uint16_t value;
+    struct
+    {
+        uint8_t lo;
+        uint8_t hi;
+    };
+    struct
+    {
+        uint16_t done:1;                 ///< receive or transmit done
+        uint16_t pll_settled:1;          ///< PLL settled
+        uint16_t radio_state_changed:1;  ///< radio state changed
+        uint16_t radio_param_changed:1;  ///< radio parameter set changed
+        uint16_t frame_clockd:1;         ///< frame clock
+        uint16_t res:11;
+    };
+} ax_event_flags_t;
+
 /* Private constants ---------------------------------------------------------*/
 
 /*! Radio configuration constants - Performance Tuning Registers */
@@ -428,7 +477,7 @@ void ax_crc_init(void)
 /* Sets the AX5043 radio as continuous FM transmitter */
 void ax_mode_fm(void)
 {
-    assassert_paramert(ax_init_state > ax_init_ready);
+    assassert_param(ax_init_state > ax_init_ready);
 
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x0B);  // FM
@@ -696,12 +745,8 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
 
     // irq
     ax_rw_2(1, 0x24, 0x03);  // PINFUNCIRQ - IRQ output
-    //ax_rw_2(1, 0x07, 0x40);  // Radio controller event
-    ax_rw_2(1, 0x07, 0x01);  // FIFO not empty
-    ax_rw_2(1, 0x09, 0x04);  // RADIOEVENTMASK
 
     ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
-
     ax_init_state = ax_init_g3ruh;
 }
 
@@ -753,6 +798,46 @@ ax_rx_state_e ax_get_rx_state()
 ax_init_state_e ax_get_init_state()
 {
     return ax_init_state;
+}
+
+
+/* Enable or disable TX interrupt */
+void ax_set_irq_tx_enable(bool enable)
+{
+    ax_irq_flags_t a;
+
+    a.hi = ax_rw_2(0, 0x06, 0);
+    a.lo = ax_rw_2(0, 0x07, 0);
+    a.radio_ctrl = 1;
+    ax_rw_2(1, 0x06, a.hi);
+    ax_rw_2(1, 0x07, a.lo);
+
+    ax_event_flags_t b;
+
+    b.hi = ax_rw_2(0, 0x08, 0);
+    b.lo = ax_rw_2(0, 0x09, 0);
+    b.done = 1;
+    ax_rw_2(1, 0x08, b.hi);
+    ax_rw_2(1, 0x09, b.lo);
+}
+
+
+/* Enable or disable RX interrupt */
+void ax_set_irq_rx_enable(bool enable)
+{
+    ax_irq_flags_t a;
+
+    a.hi = ax_rw_2(0, 0x06, 0);
+    a.lo = ax_rw_2(0, 0x07, 0);
+    a.radio_ctrl = 1;  // TODO put correct interrupt
+    ax_rw_2(1, 0x06, a.hi);
+    ax_rw_2(1, 0x07, a.lo);
+}
+
+
+/* New feature test function */
+void ax_test()
+{
 }
 
 /* Private functions ---------------------------------------------------------*/
@@ -844,6 +929,26 @@ void RIRQHandler(void)
     if (LL_EXTI_IsActiveFlag_0_31(RIRQ_EXTI_Line))
     {
         LL_EXTI_ClearFlag_0_31(RIRQ_EXTI_Line);
+
+        ax_irq_flags_t irq;
+
+        irq.hi = ax_rw_2(0, 0x0C, 0);
+        irq.lo = ax_rw_2(0, 0x0D, 0);
+
+        if (irq.radio_ctrl)
+        {
+            ax_event_flags_t ev;
+
+            ev.hi = ax_rw_2(0, 0x0E, 0);
+            ev.lo = ax_rw_2(0, 0x0F, 0);
+
+            if (ev.done)
+            {
+                __NOP();
+            }
+        }
+
+        /*
         if (ax_rx_st == ax_rx_wait)
         {
             ax_rx_st = ax_rx_wait;  // register the incoming data
@@ -852,8 +957,31 @@ void RIRQHandler(void)
         {
             ax_rx_st = ax_rx_error;  // or packet overrun error
         }
+        */
     }
 }
+
+/*
+ * 0x006 RQMASK1 (hi)
+0x007 RQMASK0 (lo)
+13 bits, enable IRQ
+
+0x008 RADIOEVENTMASK1 (hi)
+0x009 RADIOEVENTMASK0 (lo)
+9 bits
+
+0x00A IRQINVERSION1 (hi)
+0x00B IRQINVERSION0 (lo)
+13 bits, invert IRQ
+
+0x00C IRQREQUEST1 (hi)
+0x00D IRQREQUEST0 (lo)
+13 bits, pending IRQ
+
+0x00E RADIOEVENTREQ1 (hi)
+0x00F RADIOEVENTREQ0 (lo)
+9 bits
+ */
 
 /* ---------------------------------------------------------------------------*/
 

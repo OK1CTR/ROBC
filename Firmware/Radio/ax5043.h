@@ -42,6 +42,9 @@ typedef enum
 /*! AX5043 power mode */
 typedef enum
 {
+    ax_pwrmode_pd = 0,                   ///< power down, maintain registers
+    ax_pwrmode_off = 1,                  ///< power off, register loss
+    ax_pwrmode_standby = 5,              ///< oscillator running
     ax_pwrmode_tx = 0x0D,                ///< TX mode
     ax_pwrmode_rx = 0x09,                ///< RX mode
     ax_pwrmode_tx_synt = 0x0C,           ///< TX mode, synthesizer only
@@ -292,6 +295,21 @@ extern ax_rx_state_e ax_get_rx_state();
  * @return Actual initialization state
  */
 extern ax_init_state_e ax_get_init_state();
+
+/**
+ * @brief Enable or disable TX interrupt
+ * @param enable Enable state
+ */
+extern void ax_set_irq_tx_enable(bool enable);
+
+/**
+ * @brief Enable or disable RX interrupt
+ * @param enable Enable state
+ */
+extern void ax_set_irq_rx_enable(bool enable);
+
+/* New feature test function */
+extern void ax_test();
 
 /* ---------------------------------------------------------------------------*/
 
