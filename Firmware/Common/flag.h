@@ -29,11 +29,12 @@
 #define FLAG_MINUTE             (1 << 1)    ///< Global timing - minute flag
 #define FLAG_ALARM_1            (1 << 2)    ///< Global timing - alarm clock 1
 #define FLAG_ALARM_2            (1 << 3)    ///< Global timing - alarm clock 2
+#define FLAG_RADIO_DONE         (1 << 4)    ///< Radio - TX or RX done
 
 /** @} */
 
 //! Mask of all flags. This is used to verify flag parameters
-#define FLAG_ALL (FLAG_SECOND | FLAG_MINUTE)
+#define FLAG_ALL (FLAG_SECOND | FLAG_MINUTE | FLAG_ALARM_1 | FLAG_ALARM_2 | FLAG_RADIO_DONE)
 //! Macro to identify valid flag
 #define IS_FLAG(a) (a & FLAG_ALL)
 

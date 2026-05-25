@@ -42,7 +42,6 @@ void app_init()
     radio_init();
     ax_pwrmode(ax_pwrmode_tx_synt);
     ax_mode_afsk(ax_crc_mode_off);
-    ax_pwrmode(ax_pwrmode_tx);
     ax25_init();
     ax_fifo_init();
 
@@ -67,6 +66,9 @@ extern void app_run()
     tick_timer_set(&tmr_run_medium, RUN_PERIOD_MEDIUM);
     tick_timer_set(&tmr_run_quick, RUN_PERIOD_QUICK);
 
+    flag_clear_need_handle(FLAG_RADIO_DONE);
+    ax_set_irq_done_enable(true);
+
     // infinite loop
     while (1)
     {
@@ -88,6 +90,14 @@ extern void app_run()
             sprintf((char *)(buf_tx + 51), "%08lX", cnt);
             printf("[*] Message sent: %ld\n", cnt);
             ax25_send_msg(buf_tx, 0);
+            ax_pwrmode(ax_pwrmode_tx);
+        }
+
+        if (flag_get_need_handle(FLAG_RADIO_DONE))
+        {
+            flag_clear_need_handle(FLAG_RADIO_DONE);
+            ax_pwrmode(ax_pwrmode_tx_synt);
+            printf("[*] Transmission done\n");
             cnt++;
             i2c_led_bar(cnt);
         }

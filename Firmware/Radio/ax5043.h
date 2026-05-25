@@ -297,18 +297,14 @@ extern ax_rx_state_e ax_get_rx_state();
 extern ax_init_state_e ax_get_init_state();
 
 /**
- * @brief Enable or disable TX interrupt
+ * @brief Enable or disable TX and RX done interrupt
  * @param enable Enable state
  */
-extern void ax_set_irq_tx_enable(bool enable);
+extern void ax_set_irq_done_enable(bool enable);
 
 /**
- * @brief Enable or disable RX interrupt
- * @param enable Enable state
+ * @brief New feature optional test function
  */
-extern void ax_set_irq_rx_enable(bool enable);
-
-/* New feature test function */
 extern void ax_test();
 
 /* ---------------------------------------------------------------------------*/

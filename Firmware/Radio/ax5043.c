@@ -14,6 +14,7 @@
 #include <main.h>
 #include <critical.h>
 #include <string.h>
+#include <flag.h>
 #include <stm32_assert.h>
 
 /* Private defines -----------------------------------------------------------*/
@@ -477,7 +478,7 @@ void ax_crc_init(void)
 /* Sets the AX5043 radio as continuous FM transmitter */
 void ax_mode_fm(void)
 {
-    assassert_param(ax_init_state > ax_init_ready);
+    assert_param(ax_init_state > ax_init_ready);
 
     ax_rw_2(1, 0x27, 0x00);  // PWRAMP - PA off
     ax_rw_2(1, 0x10, 0x0B);  // FM
@@ -801,8 +802,8 @@ ax_init_state_e ax_get_init_state()
 }
 
 
-/* Enable or disable TX interrupt */
-void ax_set_irq_tx_enable(bool enable)
+/* Enable or disable TX and RX done interrupt */
+void ax_set_irq_done_enable(bool enable)
 {
     ax_irq_flags_t a;
 
@@ -822,22 +823,13 @@ void ax_set_irq_tx_enable(bool enable)
 }
 
 
-/* Enable or disable RX interrupt */
-void ax_set_irq_rx_enable(bool enable)
-{
-    ax_irq_flags_t a;
-
-    a.hi = ax_rw_2(0, 0x06, 0);
-    a.lo = ax_rw_2(0, 0x07, 0);
-    a.radio_ctrl = 1;  // TODO put correct interrupt
-    ax_rw_2(1, 0x06, a.hi);
-    ax_rw_2(1, 0x07, a.lo);
-}
-
-
-/* New feature test function */
+/* New feature optional test function */
 void ax_test()
 {
+    ax_rw_2(0, 0x0C, 0);
+    ax_rw_2(0, 0x0D, 0);
+    ax_rw_2(0, 0x0E, 0);
+    ax_rw_2(0, 0x0F, 0);
 }
 
 /* Private functions ---------------------------------------------------------*/
@@ -930,21 +922,21 @@ void RIRQHandler(void)
     {
         LL_EXTI_ClearFlag_0_31(RIRQ_EXTI_Line);
 
-        ax_irq_flags_t irq;
+        volatile ax_irq_flags_t irq = {0};
 
         irq.hi = ax_rw_2(0, 0x0C, 0);
         irq.lo = ax_rw_2(0, 0x0D, 0);
 
         if (irq.radio_ctrl)
         {
-            ax_event_flags_t ev;
+            volatile ax_event_flags_t ev = {0};
 
             ev.hi = ax_rw_2(0, 0x0E, 0);
             ev.lo = ax_rw_2(0, 0x0F, 0);
 
             if (ev.done)
             {
-                __NOP();
+                flag_set_need_handle(FLAG_RADIO_DONE);
             }
         }
 
