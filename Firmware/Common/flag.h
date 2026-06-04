@@ -30,12 +30,13 @@
 #define FLAG_ALARM_1            (1 << 2)    ///< Global timing - alarm clock 1
 #define FLAG_ALARM_2            (1 << 3)    ///< Global timing - alarm clock 2
 #define FLAG_RADIO_DONE         (1 << 4)    ///< Radio - TX or RX done
+#define FLAG_RADIO_FIFO         (1 << 5)    ///< Radio - FIFO not empty
+#define FLAG_RADIO_STATE        (1 << 6)    ///< Radio - radio state changed
 
 /** @} */
 
 //! Mask of all flags. This is used to verify flag parameters
-#define FLAG_ALL (FLAG_SECOND | FLAG_MINUTE | FLAG_ALARM_1 | FLAG_ALARM_2 | FLAG_RADIO_DONE)
-//! Macro to identify valid flag
+#define FLAG_ALL (FLAG_SECOND | FLAG_MINUTE | FLAG_ALARM_1 | FLAG_ALARM_2 | FLAG_RADIO_DONE | FLAG_RADIO_FIFO | FLAG_RADIO_STATE)
 #define IS_FLAG(a) (a & FLAG_ALL)
 
 /* Functions -----------------------------------------------------------------*/
