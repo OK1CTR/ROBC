@@ -348,7 +348,7 @@ void ax_config_default(void)
 /* Set the power mode of AX5043 to RX, TX, etc. */
 void ax_pwrmode(ax_pwrmode_e pwrmode)
 {
-    ax_rw_2(1, 0x02, 0x60 | ((uint8_t)pwrmode & 0x0F));
+    ax_rw_2(1, 0x02, 0x60 | (((uint8_t)pwrmode) & 0x0F));
 }
 
 
@@ -766,6 +766,31 @@ void ax_fifo_write(uint8_t *data, uint8_t length, bool commit)
     {
         ax_rw_2(1, 0x28, ax_fifo_cmd_commit);
     }
+}
+
+
+/* Read received data from FIFO */
+uint32_t ax_fifo_read(uint8_t *data, uint32_t buffer_limit)
+{
+    uint32_t chunk_size;
+    uint32_t final_count = 0;
+
+    while ((chunk_size = ax_rw_2(0, 0x2B, 0x00)) > 0)  // fifo count L
+    {
+        if (final_count + chunk_size > buffer_limit)
+        {
+            break;
+        }
+
+        if (chunk_size > 32)
+        {
+            chunk_size = 32;
+        }
+        ax_rw_N(0, 0x29, data + final_count, chunk_size);
+        final_count += chunk_size;
+    }
+
+    return final_count;
 }
 
 

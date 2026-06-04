@@ -55,7 +55,7 @@ typedef enum
 typedef enum
 {
     ax_fifo_cmd_nop = 0,                 ///< no operation
-    ax_fifo_cmd_ask = 1,                 ///< ASK coherent
+    ax_fifo_cmd_clr_fifo = 1,            ///< clear FIFO (Gemini)
     ax_fifo_cmd_clr_errors = 2,          ///< clear overrun and underrun error flags
     ax_fifo_cmd_clr_data_flags = 3,      ///< clear data and flags
     ax_fifo_cmd_commit = 4               ///< commit
@@ -265,6 +265,14 @@ extern void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encodi
  * @param commit If true, data are commited
  */
 extern void ax_fifo_write(uint8_t *data, uint8_t length, bool commit);
+
+/**
+ * @brief Read received data from FIFO
+ * @param data Pointer to receive data buffer
+ * @param buffer_limit Maximal number of bytes available in the receive buffer
+ * @return Final number of bytes read
+ */
+extern uint32_t ax_fifo_read(uint8_t *data, uint32_t buffer_limit);
 
 /**
  * @brief Control the transmitter PA
