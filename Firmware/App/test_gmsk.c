@@ -22,14 +22,14 @@
 /*! Medium rate task period in SysTick cycles */
 #define RUN_PERIOD_MEDIUM              tick_ms(1000)
 
-//! AX.25 test message buffer length
+/*! AX.25 test message buffer length */
 #define BUF_TX_LEN                     65
-//! AX.25 test message constant (50 chars + 14 spaces)
+/*! AX.25 test message constant (50 chars + 14 spaces) */
 #define FRAME_TEMPLATE "The PilsenCUBE satellite COM/OBC test @ @ @ @ \x7F\xFE\x7F\xFE              "
 
 /* Private variables ---------------------------------------------------------*/
 
-//! Test message buffer
+/*! Test message buffer */
 static uint8_t buf_tx[BUF_TX_LEN];
 
 /* Functions -----------------------------------------------------------------*/
@@ -57,7 +57,7 @@ void app_init()
 extern void app_run()
 {
     ticks_t tmr_run_medium, tmr_run_quick;
-    uint32_t cnt = 1;
+    uint32_t cnt = 0;
 
     // before start
     printf("[+] G3RUH GMSK Packet Radio TX test start\n");
