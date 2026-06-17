@@ -41,7 +41,10 @@ void radio_init()
 
     ax_config_default();
     ax_init();
+
+    ax_pwrmode(ax_pwrmode_rx_synt);
     ax_frequency(ax_vfo_a, CARRIER_FREQUENCY, 1);
+    ax_pwrmode(ax_pwrmode_pd);
 }
 
 /* ---------------------------------------------------------------------------*/

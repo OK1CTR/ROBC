@@ -199,9 +199,6 @@ static ax_status_t ax_status = {0};
 /*! Radio initialization state */
 static ax_init_state_e ax_init_state = ax_init_reset;
 
-/*! State of the AX5043 packet receiver */
-static volatile ax_rx_state_e ax_rx_st = ax_rx_wait;
-
 /* Private macros ------------------------------------------------------------*/
 
 /*! SEL line software control - H */
@@ -435,6 +432,7 @@ void ax_fifo_init(void)
 {
     ax_fifo_cmd(ax_fifo_cmd_clr_data_flags);
     ax_fifo_cmd(ax_fifo_cmd_clr_errors);
+    //ax_fifo_cmd(ax_fifo_cmd_clr_fifo);
     ax_rw_2(1, 0x2E, 0);
     ax_rw_2(1, 0x2F, FIFO_FREE_THRESHOLD);  // safe thdreshold for writes to FIFO
 }
@@ -747,7 +745,7 @@ void ax_mode_g3ruh(ax_g3ruh_rate_e type, uint8_t crc_mode, uint8_t encoding)
     // irq
     ax_rw_2(1, 0x24, 0x03);  // PINFUNCIRQ - IRQ output
 
-    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00);
+    ax_startup.power_status = ax_rw_2(0, 0x03, 0x00); // TODO << 8 ?
     ax_init_state = ax_init_g3ruh;
 }
 
@@ -814,11 +812,34 @@ ax_status_t ax_get_status()
     return ax_status;
 }
 
-/* Get the last AC5043 packet receiver status */
-ax_rx_state_e ax_get_rx_state()
+
+/* Get the actual AC5043 radio state value */
+ax_radio_state_e ax_get_radio_state()
 {
-    return ax_rx_st;
+    uint32_t a = ax_rw_2(0, 0x1C, 0);
+    ax_radio_state_e ret;
+
+    switch (a)
+    {
+        case ax_radiostate_idle:
+        case ax_radiostate_powerdown:
+        case ax_radiostate_tx_pll_set:
+        case ax_radiostate_tx:
+        case ax_radiostate_tx_tail:
+        case ax_radiostate_rx_pll_set:
+        case ax_radiostate_rx_ant_set:
+        case ax_radiostate_preamble_1:
+        case ax_radiostate_preamble_2:
+        case ax_radiostate_preamble_3:
+        case ax_radiostate_rx:
+            ret = (ax_radio_state_e)a;
+            break;
+        default:
+            ret = ax_radiostate_wrong;
+    }
+    return ret;
 }
+
 
 /* Get the actual initialization state of the radio */
 ax_init_state_e ax_get_init_state()
@@ -827,14 +848,23 @@ ax_init_state_e ax_get_init_state()
 }
 
 
-/* Enable or disable TX and RX done interrupt */
-void ax_set_irq_done_enable(bool enable)
+/* Get the background RSSI raw value */
+uint32_t ax_get_rssi_bg()
+{
+    return ax_rw_2(0, 0x41, 0);  // TODO try usee at good moment to get a value instead 128
+}
+
+
+/* Enable or disable needed interrupts */
+void ax_irq_enable(bool put_en, bool get_en, bool state_en)
 {
     ax_irq_flags_t a;
 
     a.hi = ax_rw_2(0, 0x06, 0);
     a.lo = ax_rw_2(0, 0x07, 0);
-    a.radio_ctrl = 1;
+    a.radio_ctrl = put_en || get_en || state_en;
+    a.fifo_not_empty = get_en;
+    a.fifo_thr_free = put_en;
     ax_rw_2(1, 0x06, a.hi);
     ax_rw_2(1, 0x07, a.lo);
 
@@ -842,7 +872,8 @@ void ax_set_irq_done_enable(bool enable)
 
     b.hi = ax_rw_2(0, 0x08, 0);
     b.lo = ax_rw_2(0, 0x09, 0);
-    b.done = 1;
+    b.done = put_en || get_en;
+    b.radio_state_changed = state_en;  // TODO try to use for background level capture
     ax_rw_2(1, 0x08, b.hi);
     ax_rw_2(1, 0x09, b.lo);
 }
@@ -851,10 +882,6 @@ void ax_set_irq_done_enable(bool enable)
 /* New feature optional test function */
 void ax_test()
 {
-    ax_rw_2(0, 0x0C, 0);
-    ax_rw_2(0, 0x0D, 0);
-    ax_rw_2(0, 0x0E, 0);
-    ax_rw_2(0, 0x0F, 0);
 }
 
 /* Private functions ---------------------------------------------------------*/
@@ -963,42 +990,24 @@ void RIRQHandler(void)
             {
                 flag_set_need_handle(FLAG_RADIO_DONE);
             }
+
+            if (ev.radio_state_changed)
+            {
+                flag_set_need_handle(FLAG_RADIO_STATE);
+            }
         }
 
-        /*
-        if (ax_rx_st == ax_rx_wait)
+        if (irq.fifo_not_empty)
         {
-            ax_rx_st = ax_rx_wait;  // register the incoming data
+            flag_set_need_handle(FLAG_RADIO_DATA_GET);
         }
-        else
+
+        if (irq.fifo_thr_free)
         {
-            ax_rx_st = ax_rx_error;  // or packet overrun error
+            flag_set_need_handle(FLAG_RADIO_DATA_PUT);
         }
-        */
     }
 }
-
-/*
- * 0x006 RQMASK1 (hi)
-0x007 RQMASK0 (lo)
-13 bits, enable IRQ
-
-0x008 RADIOEVENTMASK1 (hi)
-0x009 RADIOEVENTMASK0 (lo)
-9 bits
-
-0x00A IRQINVERSION1 (hi)
-0x00B IRQINVERSION0 (lo)
-13 bits, invert IRQ
-
-0x00C IRQREQUEST1 (hi)
-0x00D IRQREQUEST0 (lo)
-13 bits, pending IRQ
-
-0x00E RADIOEVENTREQ1 (hi)
-0x00F RADIOEVENTREQ0 (lo)
-9 bits
- */
 
 /* ---------------------------------------------------------------------------*/
 

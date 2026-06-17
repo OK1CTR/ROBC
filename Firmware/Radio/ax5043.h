@@ -45,10 +45,10 @@ typedef enum
     ax_pwrmode_pd = 0,                   ///< power down, maintain registers
     ax_pwrmode_off = 1,                  ///< power off, register loss
     ax_pwrmode_standby = 5,              ///< oscillator running
-    ax_pwrmode_tx = 0x0D,                ///< TX mode
+    ax_pwrmode_rx_synt = 0x08,           ///< RX mode, synthesizer only
     ax_pwrmode_rx = 0x09,                ///< RX mode
     ax_pwrmode_tx_synt = 0x0C,           ///< TX mode, synthesizer only
-    ax_pwrmode_rx_synt = 0x08            ///< RX mode, synthesizer only
+    ax_pwrmode_tx = 0x0D                 ///< TX mode
 } ax_pwrmode_e;
 
 /*! AX5043 commands given through FIFO */
@@ -119,13 +119,22 @@ typedef enum
     ax_gauss_5 = 3                       ///< BT = 0.6 (better preamble sync)
 } ax_gauss_e;
 
-/*! AX5043 receive state */
+/*! AX5043 radio state */
 typedef enum
 {
-    ax_rx_wait = 0,                      ///< packet receiver is waiting for incoming packet over radio
-    ax_rx_data = 1,                      ///< new data available in AX5043 buffer
-    ax_rx_error = 2                      ///< packet overrun error
-} ax_rx_state_e;
+    ax_radiostate_idle = 0,              ///< do nothing
+    ax_radiostate_powerdown = 0x1,       ///< power down
+    ax_radiostate_tx_pll_set = 0x4,      ///< TX PLL settings
+    ax_radiostate_tx = 0x6,              ///< TX
+    ax_radiostate_tx_tail = 0x7,         ///< TX tail
+    ax_radiostate_rx_pll_set = 0x8,      ///< RX PLL settings
+    ax_radiostate_rx_ant_set = 0x9,      ///< RX antenna settings
+    ax_radiostate_preamble_1 = 0xC,      ///< preamble 1
+    ax_radiostate_preamble_2 = 0xD,      ///< preamble 2
+    ax_radiostate_preamble_3 = 0xE,      ///< preamble 3
+    ax_radiostate_rx = 0xF,              ///< RX
+    ax_radiostate_wrong = 0x10           ///< physically non existent undefined value
+} ax_radio_state_e;
 
 /*! AX5043 radio status */
 typedef union
@@ -293,10 +302,10 @@ extern ax_startup_t ax_get_startup_status();
 extern ax_status_t ax_get_status();
 
 /**
- * @brief Get the last AC5043 packet receiver status
- * @return Actual state
+ * @brief Get the actual AC5043 radio state value
+ * @return Actual radio state
  */
-extern ax_rx_state_e ax_get_rx_state();
+extern ax_radio_state_e ax_get_radio_state();
 
 /**
  * @brief Get the actual initialization state of the radio
@@ -305,10 +314,20 @@ extern ax_rx_state_e ax_get_rx_state();
 extern ax_init_state_e ax_get_init_state();
 
 /**
- * @brief Enable or disable TX and RX done interrupt
+ * @brief Get the background RSSI raw value
+ * @return Raw value of background RSSI or 128 when used non-properly
+ */
+extern uint32_t ax_get_rssi_bg();
+
+/**
+ * @brief Enable or disable needed interrupts
+ * @note Do not overload an IRQ signal! Iy is an OR of all enabled flags!
+ * @para put_en FIFO ready to data put in
+ * @para get_en FIFO ready to data get out
+ * @para state_en radio state changed
  * @param enable Enable state
  */
-extern void ax_set_irq_done_enable(bool enable);
+extern void ax_irq_enable(bool put_en, bool get_en, bool state_en);
 
 /**
  * @brief New feature optional test function

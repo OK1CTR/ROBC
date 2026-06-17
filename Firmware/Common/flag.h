@@ -29,14 +29,23 @@
 #define FLAG_MINUTE             (1 << 1)    ///< Global timing - minute flag
 #define FLAG_ALARM_1            (1 << 2)    ///< Global timing - alarm clock 1
 #define FLAG_ALARM_2            (1 << 3)    ///< Global timing - alarm clock 2
-#define FLAG_RADIO_DONE         (1 << 4)    ///< Radio - TX or RX done
-#define FLAG_RADIO_FIFO         (1 << 5)    ///< Radio - FIFO not empty
-#define FLAG_RADIO_STATE        (1 << 6)    ///< Radio - radio state changed
+#define FLAG_RADIO_STATE        (1 << 4)    ///< Radio - radio state changed
+#define FLAG_RADIO_DONE         (1 << 5)    ///< Radio - process done
+#define FLAG_RADIO_DATA_PUT     (1 << 6)    ///< Radio - FIFO ready to put data in
+#define FLAG_RADIO_DATA_GET     (1 << 7)    ///< Radio - FIFO ready to get data from
 
 /** @} */
 
 //! Mask of all flags. This is used to verify flag parameters
-#define FLAG_ALL (FLAG_SECOND | FLAG_MINUTE | FLAG_ALARM_1 | FLAG_ALARM_2 | FLAG_RADIO_DONE | FLAG_RADIO_FIFO | FLAG_RADIO_STATE)
+#define FLAG_ALL (FLAG_SECOND\
+                  | FLAG_MINUTE\
+                  | FLAG_ALARM_1\
+                  | FLAG_ALARM_2\
+                  | FLAG_RADIO_STATE\
+                  | FLAG_RADIO_DONE\
+                  | FLAG_RADIO_DATA_PUT\
+                  | FLAG_RADIO_DATA_GET)
+
 #define IS_FLAG(a) (a & FLAG_ALL)
 
 /* Functions -----------------------------------------------------------------*/
